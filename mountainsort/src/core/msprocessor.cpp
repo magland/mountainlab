@@ -6,6 +6,7 @@ public:
 	MSProcessor *q;
 	QString m_name;
 	QString m_version;
+    QString m_description;
 	QStringList m_input_file_parameters;
 	QStringList m_output_file_parameters;
 	QStringList m_required_parameters;
@@ -28,7 +29,12 @@ QString MSProcessor::name()
 
 QString MSProcessor::version()
 {
-	return d->m_version;
+    return d->m_version;
+}
+
+QString MSProcessor::description()
+{
+    return d->m_description;
 }
 
 QStringList MSProcessor::inputFileParameters() const
@@ -58,7 +64,12 @@ void MSProcessor::setName(const QString &name)
 
 void MSProcessor::setVersion(const QString &version)
 {
-	d->m_version=version;
+    d->m_version=version;
+}
+
+void MSProcessor::setDescription(const QString &description)
+{
+    d->m_description=description;
 }
 
 void MSProcessor::setInputFileParameters(const QString &p1, const QString &p2, const QString &p3, const QString &p4)

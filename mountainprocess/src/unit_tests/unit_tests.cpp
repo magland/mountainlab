@@ -126,7 +126,7 @@ void run_unit_test_whiten() {
 
 #include "isosplit2.h"
 void run_unit_test_isosplit() {
-	QString path0=qApp->applicationDirPath()+"/../test_data";
+    QString path0=cfp(qApp->applicationDirPath()+"/../test_data");
 	Mda X; X.read(path0+"/isosplit_unit_test_X.mda");
 	QList<int> labels=isosplit2(X,1.5,30,true);
 	Mda L; L.allocate(1,labels.count());

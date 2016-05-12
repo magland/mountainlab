@@ -21,6 +21,7 @@ public:
     QJsonObject getDaemonState();
     bool queueScript(const MPDaemonPript& script);
     bool queueProcess(const MPDaemonPript& process);
+    bool clearProcessing();
 
 private:
     MPDaemonInterfacePrivate* d;

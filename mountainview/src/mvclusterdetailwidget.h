@@ -29,7 +29,7 @@ public:
     ///Set the time series, from which the templates and stats will be derived
     void setTimeseries(DiskReadMda& X);
 
-    ///Set the firings info, from which the templates and stats will be derived, TODO: refer to docs on 'what is firings'
+    ///Set the firings info, from which the templates and stats will be derived
     void setFirings(const DiskReadMda& X);
 
     ///The size of the templates to display
@@ -77,7 +77,7 @@ signals:
     void signalCurrentKChanged();
     ///The selected label numbers have changed
     void signalSelectedKsChanged();
-    ///The user has zoomed in (or out?). TODO: Is this needed?
+    ///The user has zoomed in (or out?). TODO: low-priority Is this needed?
     void signalZoomedIn();
 private slots:
     void slot_context_menu(const QPoint& pos);

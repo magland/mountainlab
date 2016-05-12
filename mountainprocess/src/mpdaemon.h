@@ -18,10 +18,10 @@
 struct ProcessResources {
     ProcessResources()
     {
-        num_cores = 0;
+        num_threads = 0;
         memory_gb = 0;
     }
-    double num_cores;
+    double num_threads;
     double memory_gb;
 };
 
@@ -33,7 +33,9 @@ public:
     MPDaemon();
     virtual ~MPDaemon();
     void setTotalResourcesAvailable(ProcessResources PR);
+    void setLogPath(const QString& path);
     bool run();
+    void clearProcessing();
 
     static QString daemonPath();
     static QString makeTimestamp(const QDateTime& dt = QDateTime::currentDateTime());
@@ -43,7 +45,8 @@ public:
     static bool pidExists(qint64 pid);
     static bool waitForFinishedAndWriteOutput(QProcess* P);
 
-private slots:
+private
+slots:
     void slot_commands_directory_changed();
     void slot_pript_qprocess_finished();
     void slot_qprocess_output();
@@ -55,13 +58,12 @@ private:
 struct ProcessRuntimeOpts {
     ProcessRuntimeOpts()
     {
-        num_cores_allotted = 1;
+        num_threads_allotted = 1;
         memory_gb_allotted = 1;
     }
-    double num_cores_allotted;
+    double num_threads_allotted;
     double memory_gb_allotted;
 };
-
 
 bool is_at_most(ProcessResources PR1, ProcessResources PR2);
 
@@ -81,7 +83,7 @@ struct MPDaemonPript {
         qprocess = 0;
         stdout_file = 0;
         prtype = ScriptType;
-        num_cores_requested = 1;
+        num_threads_requested = 1;
         memory_gb_requested = 1;
     }
     PriptType prtype;
@@ -95,24 +97,36 @@ struct MPDaemonPript {
     QString error;
     QJsonObject runtime_results;
     qint64 parent_pid;
+    QDateTime timestamp_queued;
+    QDateTime timestamp_started;
+    QDateTime timestamp_finished;
     QProcess* qprocess;
     QFile* stdout_file;
 
     //For a script:
     QStringList script_paths;
+    QStringList script_path_checksums; //to ensure that scripts have not changed at time of running
 
     //For a process:
     QString processor_name;
-    double num_cores_requested;
+    double num_threads_requested;
     double memory_gb_requested;
     ProcessRuntimeOpts runtime_opts; //defined at run time
 };
 
-QJsonObject pript_struct_to_obj(MPDaemonPript S);
+enum RecordType {
+    AbbreviatedRecord,
+    FullRecord,
+    RuntimeRecord
+};
+
+QJsonObject pript_struct_to_obj(MPDaemonPript S, RecordType rt);
 MPDaemonPript pript_obj_to_struct(QJsonObject obj);
 QJsonArray stringlist_to_json_array(QStringList list);
 QStringList json_array_to_stringlist(QJsonArray X);
 QJsonObject variantmap_to_json_obj(QVariantMap map);
 QVariantMap json_obj_to_variantmap(QJsonObject obj);
+void mkdir_if_doesnt_exist(const QString& path);
+QJsonObject runtime_opts_struct_to_obj(ProcessRuntimeOpts opts);
 
 #endif // MPDAEMON_H

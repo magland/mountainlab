@@ -144,12 +144,14 @@ bool ScriptController::runPipeline(const QString& json)
         }
         QStringList input_pnames = PP.inputs.keys();
         QStringList output_pnames = PP.outputs.keys();
-        foreach (QString pname, input_pnames) {
+        foreach(QString pname, input_pnames)
+        {
             QString path0 = node.parameters.value(pname).toString();
             if (!path0.isEmpty())
                 node.input_paths << path0;
         }
-        foreach (QString pname, output_pnames) {
+        foreach(QString pname, output_pnames)
+        {
             QString path0 = node.parameters.value(pname).toString();
             if (!path0.isEmpty())
                 node.output_paths << path0;
@@ -160,7 +162,8 @@ bool ScriptController::runPipeline(const QString& json)
     //record which outputs get created by which nodes (by index)
     QMap<QString, int> node_indices_for_outputs;
     for (int i = 0; i < nodes.count(); i++) {
-        foreach (QString path, nodes[i].output_paths) {
+        foreach(QString path, nodes[i].output_paths)
+        {
             if (!path.isEmpty()) {
                 if (node_indices_for_outputs.contains(path)) {
                     qWarning() << "Same output is created twice in pipeline.";
@@ -181,13 +184,12 @@ bool ScriptController::runPipeline(const QString& json)
         for (int i = 0; i < nodes.count(); i++) {
             if (nodes[i].completed) {
                 node_indices_completed << i;
-            }
-            else if (nodes[i].running) {
+            } else if (nodes[i].running) {
                 node_indices_running << i;
-            }
-            else {
+            } else {
                 bool ready_to_go = true;
-                foreach (QString path, nodes[i].input_paths) {
+                foreach(QString path, nodes[i].input_paths)
+                {
                     if (node_indices_for_outputs.contains(path)) {
                         int ii = node_indices_for_outputs[path];
                         if (!nodes[ii].completed) {
@@ -221,8 +223,7 @@ bool ScriptController::runPipeline(const QString& json)
             if (PM->processAlreadyCompleted(node->processor_name, node->parameters)) {
                 this->log(QString("Process already completed: %1").arg(node->processor_name));
                 node->completed = true;
-            }
-            else {
+            } else {
                 printf("Queuing process %s\n", node->processor_name.toLatin1().data());
                 QProcess* P1 = d->queue_process(node->processor_name, node->parameters);
                 if (!P1) {
@@ -289,7 +290,8 @@ QProcess* ScriptControllerPrivate::queue_process(QString processor_name, const Q
     args << "queue-process";
     args << processor_name;
     QStringList pkeys = parameters.keys();
-    foreach (QString pkey, pkeys) {
+    foreach(QString pkey, pkeys)
+    {
         args << QString("--%1=%2").arg(pkey).arg(parameters[pkey].toString());
     }
     args << QString("--~parent_pid=%1").arg(QCoreApplication::applicationPid());

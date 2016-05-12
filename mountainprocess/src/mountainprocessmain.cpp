@@ -21,6 +21,19 @@
 #include "processmanager.h"
 #include "textfile.h"
 #include "cachemanager.h"
+#include "mlutils.h"
+
+/// TODO change all .ini config files to json
+/// TODO convert python web servers to nodejs
+/// TODO make central list of all servers/services to be running
+/// TODO web page that checks status of all services
+/// TODO add field linking process to parent script
+/// TODO improve stdout view
+/// TODO put mountainbrowser in html -- no qtwebkit
+/// TODO consolidate all temporary and data directories in mountainlab/data mountainlab/tmp
+/// TODO consolidate all configuration files in mountainlab/config
+/// TODO security in scripts that are able to be submitted
+/// TODO remove mscmdserver -- replace by mpserver
 
 void print_usage();
 bool load_parameter_file(QVariantMap& params, const QString& fname);
@@ -34,12 +47,21 @@ int main(int argc, char* argv[])
     QCoreApplication app(argc, argv);
     CLParams CLP = commandlineparams(argc, argv);
 
-    CacheManager::globalInstance()->setLocalBasePath(qApp->applicationDirPath() + "/../tmp");
+    CacheManager::globalInstance()->setLocalBasePath(cfp(qApp->applicationDirPath() + "/../tmp"));
 
     QString arg1 = CLP.unnamed_parameters.value(0);
     QString arg2 = CLP.unnamed_parameters.value(1);
 
     setbuf(stdout, NULL);
+
+    QString config_fname = cfp(qApp->applicationDirPath() + "/mountainprocess.ini");
+    QSettings config(config_fname, QSettings::IniFormat);
+    QString log_path = config.value("log_path").toString();
+    if (!log_path.isEmpty()) {
+        if (QFileInfo(log_path).isRelative()) {
+            log_path = cfp(qApp->applicationDirPath() + "/" + log_path);
+        }
+    }
 
     if (arg1 == "list-processors") { //Provide a human-readable list of the available processors
         if (!initialize_process_manager())
@@ -172,12 +194,11 @@ int main(int argc, char* argv[])
     else if (arg1 == "daemon-start") {
         if (!initialize_process_manager())
             return -1;
-        QString config_fname = qApp->applicationDirPath() + "/mountainprocess.ini";
-        QSettings config(config_fname, QSettings::IniFormat);
         MPDaemon X;
+        X.setLogPath(log_path);
         ProcessResources RR;
-        RR.num_cores=config.value("num_cores",8).toDouble();
-        RR.memory_gb=config.value("memory_gb",8).toDouble();
+        RR.num_threads = config.value("num_threads", 8).toDouble();
+        RR.memory_gb = config.value("memory_gb", 8).toDouble();
         X.setTotalResourcesAvailable(RR);
         if (!X.run())
             return -1;
@@ -221,12 +242,28 @@ int main(int argc, char* argv[])
         printf("%s", json.toLatin1().data());
         return 0;
     }
+    else if (arg1 == "clear-processing") {
+        MPDaemonInterface X;
+        X.clearProcessing();
+        return 0;
+    }
     else if (arg1 == "queue-script") { //Queue a script -- to be executed when resources are available
-        /// TODO Probably important to record the checksum of the script files so that we know whether things have changed by the time we come around to running the script
         return queue_pript(ScriptType, CLP);
     }
     else if (arg1 == "queue-process") {
         return queue_pript(ProcessType, CLP);
+    }
+    else if (arg1 == "get-script") {
+        if (!log_path.isEmpty()) {
+            QString str = read_text_file(log_path + "/scripts/" + CLP.named_parameters["id"].toString() + ".json");
+            printf("%s", str.toLatin1().data());
+        }
+    }
+    else if (arg1 == "get-process") {
+        if (!log_path.isEmpty()) {
+            QString str = read_text_file(log_path + "/processes/" + CLP.named_parameters["id"].toString() + ".json");
+            printf("%s", str.toLatin1().data());
+        }
     }
     else {
         print_usage(); //print usage information
@@ -241,7 +278,7 @@ bool initialize_process_manager()
     /*
      * Load configuration file. If it doesn't exist, copy example configuration file.
      */
-    QString config_fname = qApp->applicationDirPath() + "/mountainprocess.ini";
+    QString config_fname = cfp(qApp->applicationDirPath() + "/mountainprocess.ini");
     if (!QFile::exists(config_fname)) {
         if (!QFile::copy(config_fname + ".example", config_fname)) {
             qWarning() << "Unable to copy example configuration file to " + config_fname;
@@ -264,8 +301,7 @@ bool initialize_process_manager()
     foreach (QString processor_path, processor_paths) {
         QString p0 = processor_path;
         if (QFileInfo(p0).isRelative()) {
-            /// TODO use canonicalFilePath throughout, wherever appropriate so we don't get stuff like a/b/c/../../b/c/../d
-            p0 = QFileInfo(qApp->applicationDirPath() + "/" + p0).canonicalFilePath();
+            p0 = cfp(qApp->applicationDirPath() + "/" + p0);
         }
         printf("Searching for processors in %s\n", p0.toLatin1().data());
         PM->loadProcessors(p0);
@@ -276,7 +312,6 @@ bool initialize_process_manager()
 
 bool load_parameter_file(QVariantMap& params, const QString& fname)
 {
-    /// Witold maybe a bad idea but.... I would like for user to optionally specify the parameters in a more intuitive way than json. Like freq_min=300\nfreq_max=6000, etc. I'd like to support both formats and detect which one.
     QString json = read_text_file(fname);
     if (json.isEmpty()) {
         qWarning() << "Non-existent or empty parameter file: " + fname;
@@ -365,7 +400,7 @@ int queue_pript(PriptType prtype, const CLParams& CLP)
 {
     MPDaemonPript PP;
 
-    bool detach=CLP.named_parameters.value("~detach",false).toBool();
+    bool detach = CLP.named_parameters.value("~detach", false).toBool();
 
     if (prtype == ScriptType) {
         QVariantMap params;
@@ -373,6 +408,7 @@ int queue_pript(PriptType prtype, const CLParams& CLP)
             QString str = CLP.unnamed_parameters[i];
             if (str.endsWith(".js")) {
                 PP.script_paths << str;
+                PP.script_path_checksums << compute_checksum_of_file(str);
             }
             if (str.endsWith(".par")) { // note that we can have multiple parameter files! the later ones override the earlier ones.
                 if (!load_parameter_file(params, str)) {
@@ -397,24 +433,24 @@ int queue_pript(PriptType prtype, const CLParams& CLP)
 
     PP.id = make_random_id();
 
-    if (!detach) {
-        if (prtype == ScriptType) {
-            PP.output_fname = CLP.named_parameters["~script_output"].toString();
-        }
-        else {
-            PP.output_fname = CLP.named_parameters["~process_output"].toString();
-        }
-        if (PP.output_fname.isEmpty()) {
-            if (prtype == ScriptType)
-                PP.output_fname = CacheManager::globalInstance()->makeLocalFile("script_output." + PP.id + ".json", CacheManager::ShortTerm);
-            else
-                PP.output_fname = CacheManager::globalInstance()->makeLocalFile("process_output." + PP.id + ".json", CacheManager::ShortTerm);
-        }
+    if (prtype == ScriptType) {
+        PP.output_fname = CLP.named_parameters["~script_output"].toString();
+    }
+    else {
+        PP.output_fname = CLP.named_parameters["~process_output"].toString();
+    }
+    if (PP.output_fname.isEmpty()) {
         if (prtype == ScriptType)
-            PP.stdout_fname = CacheManager::globalInstance()->makeLocalFile("script_stdout." + PP.id + ".txt", CacheManager::ShortTerm);
+            PP.output_fname = CacheManager::globalInstance()->makeLocalFile("script_output." + PP.id + ".json", CacheManager::ShortTerm);
         else
-            PP.stdout_fname = CacheManager::globalInstance()->makeLocalFile("process_stdout." + PP.id + ".txt", CacheManager::ShortTerm);
+            PP.output_fname = CacheManager::globalInstance()->makeLocalFile("process_output." + PP.id + ".json", CacheManager::ShortTerm);
+    }
+    if (prtype == ScriptType)
+        PP.stdout_fname = CacheManager::globalInstance()->makeLocalFile("script_stdout." + PP.id + ".txt", CacheManager::ShortTerm);
+    else
+        PP.stdout_fname = CacheManager::globalInstance()->makeLocalFile("process_stdout." + PP.id + ".txt", CacheManager::ShortTerm);
 
+    if (!detach) {
         PP.parent_pid = QCoreApplication::applicationPid();
     }
 

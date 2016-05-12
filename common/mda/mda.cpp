@@ -117,9 +117,7 @@ bool Mda::read(const char* path)
 
 bool Mda::write32(const char* path) const
 {
-    qDebug() << "DEBUG" << __FUNCTION__ << __FILE__ << __LINE__ << "----------------------" << path;
     if ((QString(path).endsWith(".txt")) || (QString(path).endsWith(".csv"))) {
-        qDebug() << "DEBUG" << __FUNCTION__ << __FILE__ << __LINE__;
         return d->write_to_text_file(path);
     }
     FILE* output_file = fopen(path, "wb");
@@ -143,9 +141,7 @@ bool Mda::write32(const char* path) const
 
 bool Mda::write64(const char* path) const
 {
-    qDebug() << "DEBUG" << __FUNCTION__ << __FILE__ << __LINE__ << "----------------------" << path;
     if ((QString(path).endsWith(".txt")) || (QString(path).endsWith(".csv"))) {
-        qDebug() << "DEBUG" << __FUNCTION__ << __FILE__ << __LINE__;
         return d->write_to_text_file(path);
     }
     FILE* output_file = fopen(path, "wb");

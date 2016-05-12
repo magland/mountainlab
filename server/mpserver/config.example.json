@@ -1,0 +1,6 @@
+{
+	"listen_port":"8004",
+	"mountainprocess_exe":"../../mountainprocess/bin/mountainprocess",
+	"tmp_mpserver_path":"../../tmp_mpserver",
+	"html_path":"../../html"
+}

@@ -131,6 +131,12 @@ VPATH += ../../common/cachemanager
 HEADERS += cachemanager.h
 SOURCES += cachemanager.cpp
 
+INCLUDEPATH += ../../common
+DEPENDPATH += ../../common
+VPATH += ../../common
+HEADERS += mlutils.h
+SOURCES += mlutils.cpp
+
 RESOURCES += mountainview.qrc
 
 #LAPACK

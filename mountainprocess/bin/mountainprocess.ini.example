@@ -1,5 +1,6 @@
 [general]
 processor_paths = ../processors
+log_path = ../mpdaemon_log
 num_cores = 8
 memory_gb = 8
 

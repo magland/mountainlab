@@ -91,7 +91,7 @@ bool extract_raw_Processor::run(const QMap<QString, QVariant>& params)
     }
 
     DiskWriteMda Y(MDAIO_TYPE_FLOAT32, timeseries_out_path, M2, N2);
-    long chunk_size = qMax(1000L,(long)1e6/M);
+    long chunk_size = qMax(1000L, (long)1e6 / M);
     QTime timer;
     timer.start();
     for (long t = 0; t < N2; t += chunk_size) {
@@ -103,7 +103,7 @@ bool extract_raw_Processor::run(const QMap<QString, QVariant>& params)
         if (t + aa > N2)
             aa = N2 - t;
         Mda chunk;
-        X.readChunk(chunk, 0, t1-1 + t, M, aa);
+        X.readChunk(chunk, 0, t1 - 1 + t, M, aa);
         Mda chunk2(M2, aa);
         for (int k = 0; k < aa; k++) {
             for (int j = 0; j < channels.count(); j++) {

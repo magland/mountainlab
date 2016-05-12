@@ -19,10 +19,10 @@
 #include <msscriptcontroller.h>
 #include "diskreadmda.h"
 #include "unit_tests.h"
-#include "process_msh.h"
 #include "textfile.h"
 #include <QJSEngine>
 #include "cachemanager.h"
+#include "mlutils.h"
 
 void print_usage();
 void list_processors(const MSProcessManager* PM);
@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
     setbuf(stdout, NULL);
 
 
-    CacheManager::globalInstance()->setLocalBasePath(app.applicationDirPath() + "/../../tmp");
+    CacheManager::globalInstance()->setLocalBasePath(cfp(app.applicationDirPath() + "/../../tmp"));
 
     CLParams CLP = get_command_line_params(argc, argv);
 

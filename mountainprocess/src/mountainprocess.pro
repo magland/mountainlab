@@ -21,6 +21,12 @@ SOURCES += mda.cpp mdaio.cpp usagetracking.cpp diskreadmda.cpp diskwritemda.cpp 
     mpdaemon.cpp \
     mpdaemoninterface.cpp
 
+INCLUDEPATH += ../../common
+DEPENDPATH += ../../common
+VPATH += ../../common
+HEADERS += mlutils.h
+SOURCES += mlutils.cpp
+
 #DEFINES += USE_REMOTE_MDA
 #HEADERS += remotereadmda.h
 #SOURCES += remotereadmda.cpp

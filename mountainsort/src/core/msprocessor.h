@@ -20,6 +20,7 @@ public:
 
 	QString name();
 	QString version();
+    QString description();
 	QStringList inputFileParameters() const;
 	QStringList outputFileParameters() const;
 	QStringList requiredParameters() const;
@@ -31,6 +32,7 @@ public:
 protected:
 	void setName(const QString &name);
 	void setVersion(const QString &version);
+    void setDescription(const QString &description);
 	void setInputFileParameters(const QString &p1,const QString &p2="",const QString &p3="",const QString &p4="");
 	void setOutputFileParameters(const QString &p1,const QString &p2="",const QString &p3="",const QString &p4="");
 	void setRequiredParameters(const QString &p1,const QString &p2="",const QString &p3="",const QString &p4="");

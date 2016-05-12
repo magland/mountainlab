@@ -18,6 +18,8 @@ QList<long> get_sort_indices(const QList<int>& channels, const QList<double>& te
 
 bool branch_cluster_v2(const QString& timeseries_path, const QString& detect_path, const QString& adjacency_matrix_path, const QString& output_firings_path, const Branch_Cluster_V2_Opts& opts)
 {
+    /// TODO display total number of clusters at the end
+
     printf("Starting branch_cluster_v2\n");
     DiskReadMda X;
     X.setPath(timeseries_path);

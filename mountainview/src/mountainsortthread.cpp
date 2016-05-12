@@ -12,6 +12,7 @@
 #include <QDebug>
 #include "msmisc.h"
 #include "cachemanager.h"
+#include "mlutils.h"
 
 class MountainsortThreadPrivate {
 public:
@@ -63,7 +64,7 @@ void MountainsortThread::compute()
 {
 
     if (d->m_mscmdserver_url.isEmpty()) {
-        QString mountainsort_exe = qApp->applicationDirPath() + "/../../mountainsort/bin/mountainsort";
+	QString mountainsort_exe = cfp(qApp->applicationDirPath() + "/../../mountainsort/bin/mountainsort");
         QStringList args;
         args << d->m_processor_name;
         QStringList keys = d->m_parameters.keys();

@@ -10,7 +10,7 @@ $(document).ready(function() {
 	var j=1;
 	function do_next() {
 		var opts={detach:true};
-		var num=j;
+		var num=1;
 		var script1="function main() {initialize_pipeline(); copy_with_delay('/home/magland/tmp11.sh','/home/magland/tmp33-"+num+".sh'); run_pipeline();}";
 		var scripts=[{code:script1,fname:'test1.js'}];
 		queueScript(scripts,opts,function(resp) {

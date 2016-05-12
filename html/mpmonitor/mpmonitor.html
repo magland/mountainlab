@@ -1,0 +1,106 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<script src="jquery.min.js"></script>
+<script src="daemonstateview.js"></script>
+<script src="priptview.js"></script>
+<script src="mpmonitor.js"></script>
+<script src="mpclient.js"></script>
+<link rel="stylesheet" type="text/css" href="mpmonitor.css">
+
+<script>
+$(document).ready(function() {
+
+    $.getJSON('config.json',function(config) {
+    	//var url='http://datalaboratory.org:8004';
+        var url=config.mpserver_url;
+        var client=new MPClient(url);
+
+        var X=new MPMonitor();
+        X.setClient(client);
+        $('#monitor').append(X.div());
+
+        $(window).resize(update_size);
+        update_size();
+        function update_size() {
+        	X.setGeom(0,0,$(window).width()-30,$(window).height()-30);
+        }
+
+        X.loadState();
+        setInterval(X.loadState,1000);
+
+        $('#launch_test_script').click(launch_test_script);
+        function launch_test_script() {
+        	for (var j=0; j<20; j++) {
+    	    	var opts={detach:true};
+    			var num=j;
+    	    	var script1="function main() {console.log('initialize'); initialize_pipeline(); console.log('copy'); copy_with_delay('/home/magland/tmp/file1.txt','/home/magland/tmp/file1.txt."+num+"'); console.log('run'); run_pipeline(); console.log('done');}";
+    			var scripts=[{code:script1,fname:'test1.js'}];
+    			client.queueScript(scripts,opts,function(resp) {
+    				//console.log(resp);
+    			});
+    		}
+        }
+
+        $('#clear_processing').click(client.clearProcessing);
+    });
+
+});
+</script>
+
+</head>
+
+<body>
+
+<span id=monitor></span>
+
+<div id=templates style="visibility: hidden;">
+    <div id=daemonstateview>
+    	<div id="daemon">
+	        <table>
+	        <tr><th id=running></th></tr>
+	        <tr><td><button id=launch_test_script>Launch test script</button></td>
+	        <tr><td><button id=clear_processing>Clear processing</button></td></tr>
+	        </table>
+	    </div>
+	    <div id=scripts>
+	        <table id=running>
+	        </table>
+	    </div>
+	    <div id=processes>
+	        <table id=running>
+        	</table>
+        </div>
+    </div>
+    
+    <table id=dummy_for_daemonstateview>
+    <tr id=dsv_script_row>
+        <td id=pript_id></td>
+        <td id=script_names></td>
+        <td id=status></td>
+    </tr>
+    <tr id=dsv_process_row>
+        <td id=pript_id></td>
+        <td id=processor_name></td>
+        <td id=status></td>
+    </tr>
+    </table>
+
+    <div id="priptview">
+    	<table>
+    	<tr><th>ID:</th><td id=pript_id></td></tr>
+    	<tr><th>Type:</th><td id=type></td></tr>
+    	<tr><th id=name_label>Name:</th><td id=name></td></tr>
+    	<tr><th>Status:</th><td id=status></td></tr>
+    	<tr><th>Allotted:</th><td id=allotted></td></tr>
+    	</table>
+    	<textarea id="stdout"></textarea>
+    	<textarea id="raw"></textarea>
+    </div>
+
+
+</div>
+
+</body>
+</html>

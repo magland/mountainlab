@@ -21,6 +21,8 @@ Mda compute_templates_0(DiskReadMda &X, Mda &firings,int clip_size)
 
 Mda compute_templates_0(DiskReadMda &X, const QList<double> &times, const QList<int> &labels, int clip_size)
 {
+    /// TODO parallelize this calculation
+
     int M=X.N1();
     int T=clip_size;
     long L=times.count();

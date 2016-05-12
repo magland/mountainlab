@@ -33,7 +33,7 @@ public:
     void setLineColor(const QColor& col);
     ///Displayed title of histogram
     void setTitle(const QString& title);
-    ///Controls background and highlighting colors. For consistent app look. TODO: handle this in appropriate way
+    ///Controls background and highlighting colors. For consistent app look. TODO: Low-priority handle this in appropriate way (setColors)
     void setColors(const QMap<QString, QColor>& colors);
 
     ///Set this as the current histogram (affects highlighting)

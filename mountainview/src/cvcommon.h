@@ -9,7 +9,9 @@
 #include <QDebug>
 #include "usagetracking.h"
 
-/// 3D vector - TODO: old, should rename, rewrite
+/// TODO this file is way old, should rename, rewrite
+
+/// 3D vector -
 struct CVPoint {
     float x, y, z;
 };

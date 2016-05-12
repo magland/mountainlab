@@ -22,6 +22,7 @@
 #include <QTextBrowser>
 #include "cvcombowidget.h"
 #include "cvcommon.h"
+#include "mlutils.h"
 
 void do_wait(int ms) {
 	QTime timer; timer.start();
@@ -321,9 +322,9 @@ void SSTimeSeriesWidget::slot_extract_clips()
 
 	QStringList args; args << data_path << TL_path << out_path << QString("--clipsize=%1").arg(clipsize) << "--labels="+labels_txt;
     if (fixed_clipsize) args << "--fixed-clipsize";
-	QString exe=qApp->applicationDirPath()+"/extractclips";
+	QString exe=cfp(qApp->applicationDirPath()+"/extractclips");
 	if (!QFile::exists(exe)) {
-		QString exe2=qApp->applicationDirPath()+"/../src/spikespy/bin/extractclips";
+		QString exe2=cfp(qApp->applicationDirPath()+"/../src/spikespy/bin/extractclips");
 		if (QFile::exists(exe2)) exe=exe2;
     }
 	qDebug()  << exe << args;

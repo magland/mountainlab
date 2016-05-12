@@ -28,7 +28,7 @@ public:
     Q_INVOKABLE void addTimeseriesPath(const QString& name, const QString& path);
     ///The name of the timeseries being viewed... corresponds to name in addTimeseriesPath()
     Q_INVOKABLE void setCurrentTimeseriesName(const QString& name);
-    ///Set the path to the results of sorting. TODO: refer to docs for info on firings array
+    ///Set the path to the results of sorting.
     Q_INVOKABLE void setFiringsPath(const QString& firings);
     ///The sample rate for the dataset
     Q_INVOKABLE void setSampleRate(float freq);
