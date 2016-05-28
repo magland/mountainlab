@@ -62,7 +62,8 @@ public:
     void schedule_emit_transformation_changed();
     void do_paint(QPainter& painter, int W, int H);
     void export_image();
-public slots:
+public
+slots:
     void slot_emit_transformation_changed();
 };
 #include "mvclusterview.moc"
@@ -256,8 +257,7 @@ QRectF compute_centered_square(QRectF R)
     int H0 = R.height() - margin * 2;
     if (W0 > H0) {
         return QRectF(margin + (W0 - H0) / 2, margin, H0, H0);
-    }
-    else {
+    } else {
         return QRectF(margin, margin + (H0 - W0) / 2, W0, W0);
     }
 }
@@ -325,8 +325,7 @@ void MVClusterView::wheelEvent(QWheelEvent* evt)
     double factor = 1;
     if (delta > 0) {
         factor = 1.1;
-    }
-    else if (delta < 0) {
+    } else if (delta < 0) {
         factor = 1 / 1.1;
     }
     if (delta != 1) {
@@ -487,8 +486,8 @@ void MVClusterViewPrivate::update_grid()
         if (max_abs_val) {
             for (double aa = -max_abs_val * factor; aa <= max_abs_val * factor; aa += max_abs_val * factor / 50) {
                 {
-                    CVPoint pt1 = cvpoint(aa, 0, 0);
-                    CVPoint pt2 = m_transformation.map(pt1);
+                    Point3D pt1 = Point3D(aa, 0, 0);
+                    Point3D pt2 = m_transformation.map(pt1);
                     x0s << pt2.x;
                     y0s << pt2.y;
                     z0s << pt2.z;
@@ -497,8 +496,8 @@ void MVClusterViewPrivate::update_grid()
                     amp0s << 0;
                 }
                 {
-                    CVPoint pt1 = cvpoint(0, aa, 0);
-                    CVPoint pt2 = m_transformation.map(pt1);
+                    Point3D pt1 = Point3D(0, aa, 0);
+                    Point3D pt2 = m_transformation.map(pt1);
                     x0s << pt2.x;
                     y0s << pt2.y;
                     z0s << pt2.z;
@@ -507,8 +506,8 @@ void MVClusterViewPrivate::update_grid()
                     amp0s << 0;
                 }
                 {
-                    CVPoint pt1 = cvpoint(0, 0, aa);
-                    CVPoint pt2 = m_transformation.map(pt1);
+                    Point3D pt1 = Point3D(0, 0, aa);
+                    Point3D pt2 = m_transformation.map(pt1);
                     x0s << pt2.x;
                     y0s << pt2.y;
                     z0s << pt2.z;
@@ -545,8 +544,7 @@ void MVClusterViewPrivate::update_grid()
                     }
                     z_grid_ptr[iiii] = z0;
                 }
-            }
-            else {
+            } else {
                 m_point_grid_ptr[iiii] = 1;
                 if (m_mode == MVCV_MODE_TIME_COLORS) {
                     m_time_grid_ptr[iiii] = time0;
@@ -591,10 +589,10 @@ void MVClusterViewPrivate::update_grid()
                 a2 = max_abs_val * factor;
             if (pass == 3)
                 a3 = max_abs_val * factor;
-            CVPoint pt1 = cvpoint(-a1, -a2, -a3);
-            CVPoint pt2 = cvpoint(a1, a2, a3);
-            CVPoint pt1b = m_transformation.map(pt1);
-            CVPoint pt2b = m_transformation.map(pt2);
+            Point3D pt1 = Point3D(-a1, -a2, -a3);
+            Point3D pt2 = Point3D(a1, a2, a3);
+            Point3D pt1b = m_transformation.map(pt1);
+            Point3D pt2b = m_transformation.map(pt2);
             double x1, y1, x2, y2;
             coord2gridindex(pt1b.x, pt1b.y, x1, y1);
             coord2gridindex(pt2b.x, pt2b.y, x2, y2);
@@ -615,8 +613,7 @@ void MVClusterViewPrivate::update_grid()
                 }
             }
         }
-    }
-    else {
+    } else {
         for (int i2 = 0; i2 < N2; i2++) {
             for (int i1 = 0; i1 < N1; i1++) {
                 double val = m_point_grid.value(i1, i2);
@@ -627,33 +624,27 @@ void MVClusterViewPrivate::update_grid()
                             QColor CC = get_time_color(time0 / m_max_time);
                             m_grid_image.setPixel(i1, i2, CC.rgb());
                         }
-                    }
-                    else if (val == -2) {
+                    } else if (val == -2) {
                         m_grid_image.setPixel(i1, i2, axes_color.rgb());
                     }
-                }
-                else if (m_mode == MVCV_MODE_AMPLITUDE_COLORS) {
+                } else if (m_mode == MVCV_MODE_AMPLITUDE_COLORS) {
                     if (val >= 0) {
                         double amp0 = m_amplitude_grid.value(i1, i2);
                         if (m_max_amplitude) {
                             QColor CC = get_time_color(amp0 / m_max_amplitude);
                             m_grid_image.setPixel(i1, i2, CC.rgb());
                         }
-                    }
-                    else if (val == -2) {
+                    } else if (val == -2) {
                         m_grid_image.setPixel(i1, i2, axes_color.rgb());
                     }
-                }
-                else if (m_mode == MVCV_MODE_LABEL_COLORS) {
+                } else if (m_mode == MVCV_MODE_LABEL_COLORS) {
                     if (val > 0) {
                         QColor CC = get_label_color((int)val);
                         m_grid_image.setPixel(i1, i2, CC.rgb());
-                    }
-                    else if (val == 0) {
+                    } else if (val == 0) {
                         QColor CC = Qt::white;
                         m_grid_image.setPixel(i1, i2, CC.rgb());
-                    }
-                    else if (val == -2) {
+                    } else if (val == -2) {
                         m_grid_image.setPixel(i1, i2, axes_color.rgb());
                     }
                 }

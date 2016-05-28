@@ -9,9 +9,12 @@
 
 #include <QThread>
 #include <QString>
+#include <QMutex>
+
+#include "haltagent.h"
 
 class ComputationThreadPrivate;
-class ComputationThread : public QThread {
+class ComputationThread : public QThread, public HaltAgent {
     Q_OBJECT
 public:
     friend class ComputationThreadPrivate;
@@ -22,22 +25,24 @@ public:
 
     void setDeleteOnComplete(bool val);
     void startComputation(); //will stop existing computation
-    void stopComputation(); //will wait for stop before returning
+    bool stopComputation(int timeout = 0); //will wait for stop before returning, returns true if successfully stopped
     bool isComputing();
     bool isFinished();
     bool hasError();
     QString errorMessage();
 
+    bool stopRequested();
+
 signals:
     void computationFinished();
 
 protected:
-    bool stopRequested();
     void setErrorMessage(const QString& error);
 
 private:
     void run();
-private slots:
+private
+slots:
     void slot_start();
 
 private:

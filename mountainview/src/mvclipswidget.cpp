@@ -9,7 +9,7 @@
 #include "taskprogress.h"
 #include <QHBoxLayout>
 #include "computationthread.h"
-#include "mountainsortthread.h"
+#include "mountainprocessrunner.h"
 #include "msmisc.h"
 
 class MVClipsWidgetComputer : public ComputationThread {
@@ -61,6 +61,7 @@ MVClipsWidget::MVClipsWidget()
 
 MVClipsWidget::~MVClipsWidget()
 {
+    d->m_computer.stopComputation(); // important do take care of this before things start getting destructed!
     delete d;
 }
 
@@ -128,13 +129,14 @@ void MVClipsWidgetComputer::compute()
     QString firings_out_path;
     {
         QString labels_str;
-        foreach (int x, labels_to_use) {
+        foreach(int x, labels_to_use)
+        {
             if (!labels_str.isEmpty())
                 labels_str += ",";
             labels_str += QString("%1").arg(x);
         }
 
-        MountainsortThread MT;
+        MountainProcessRunner MT;
         QString processor_name = "mv_subfirings";
         MT.setProcessorName(processor_name);
 
@@ -147,12 +149,16 @@ void MVClipsWidgetComputer::compute()
 
         firings_out_path = MT.makeOutputFilePath("firings_out");
 
-        MT.compute();
+        MT.runProcess(this);
+        if (this->stopRequested()) {
+            task.error(QString("Halted while running process: " + processor_name));
+            return;
+        }
     }
 
     QString clips_path;
     {
-        MountainsortThread MT;
+        MountainProcessRunner MT;
         QString processor_name = "extract_clips";
         MT.setProcessorName(processor_name);
 
@@ -166,17 +172,28 @@ void MVClipsWidgetComputer::compute()
 
         clips_path = MT.makeOutputFilePath("clips");
 
-        MT.compute();
+        MT.runProcess(this);
+        if (this->stopRequested()) {
+            task.error(QString("Halted while running process: " + processor_name));
+            return;
+        }
     }
     task.log("Reading: " + firings_out_path);
     DiskReadMda firings_out(firings_out_path);
+    task.log(QString("firings_out: %1 x %2").arg(firings_out.N1()).arg(firings_out.N2()));
     times.clear();
     for (long j = 0; j < firings_out.N2(); j++) {
         times << firings_out.value(1, j);
     }
     task.log("Reading: " + clips_path);
     DiskReadMda CC(clips_path);
+    task.log(QString("CC: %1 x %2 x %3").arg(CC.N1()).arg(CC.N2()).arg(CC.N3()));
+    CC.setHaltAgent(this);
     CC.readChunk(clips, 0, 0, 0, CC.N1(), CC.N2(), CC.N3());
+    if (this->stopRequested()) {
+        task.error(QString("Halted while reading chunk from: " + clips_path));
+        return;
+    }
 }
 
 void MVClipsWidgetPrivate::start_computation()

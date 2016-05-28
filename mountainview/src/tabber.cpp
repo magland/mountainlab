@@ -24,6 +24,8 @@ public:
     int find_widget_index_in_container(QString container_name, QWidget* W);
     ///Remove widget (but don't delete) from its container (or tab widget)
     void remove_widget(QWidget* W);
+    ///Check if this widget is contained in the list of widgets
+    bool contains_widget(QWidget* W);
     ///Get the name of a different container, or "" if none
     QString find_other_container_name(QString name);
 };
@@ -103,10 +105,16 @@ QList<QWidget*> Tabber::allWidgets()
 void Tabber::slot_tab_close_requested(int index)
 {
     Q_UNUSED(index)
-    TabberTabWidget* TW = (TabberTabWidget*)sender();
+    TabberTabWidget* TW = qobject_cast<TabberTabWidget*>(sender());
+    if (!TW)
+        return;
     QWidget* W = TW->widget(index);
-    d->remove_widget(W);
-    delete W;
+    if (!W)
+        return;
+    if (d->contains_widget(W)) { // I think this condition is important so we don't delete the same widget twice if the user requests close twice
+        d->remove_widget(W);
+        delete W;
+    }
 }
 
 void Tabber::slot_tab_bar_clicked(int index)
@@ -191,6 +199,16 @@ void TabberPrivate::remove_widget(QWidget* W)
             return;
         }
     }
+}
+
+bool TabberPrivate::contains_widget(QWidget* W)
+{
+    for (int i = 0; i < m_widgets.count(); i++) {
+        if (m_widgets[i].widget == W) {
+            return true;
+        }
+    }
+    return false;
 }
 
 QString TabberPrivate::find_other_container_name(QString name)

@@ -2,15 +2,16 @@
 #include "mdaio.h"
 #include <stdio.h>
 #include "textfile.h"
+#include "taskprogress.h"
 
 #define MDA_MAX_DIMS 6
 
-
 #ifdef USE_SSE2
-static void* malloc_aligned(const size_t alignValue, const size_t nbytes) {
+static void* malloc_aligned(const size_t alignValue, const size_t nbytes)
+{
     void* result = 0;
 #ifdef __linux__
-    if(posix_memalign(&result, alignValue, nbytes) != 0)
+    if (posix_memalign(&result, alignValue, nbytes) != 0)
         result = 0;
 #elif defined(__WIN32)
     result = _aligned_malloc(nbytes, alignValue);
@@ -19,7 +20,8 @@ static void* malloc_aligned(const size_t alignValue, const size_t nbytes) {
 }
 #endif
 
-void* allocate(const size_t nbytes) {
+void* allocate(const size_t nbytes)
+{
 #ifdef USE_SSE2
     return malloc_aligned(16, nbytes);
 #else
@@ -77,13 +79,20 @@ void Mda::operator=(const Mda& other)
 
 Mda::~Mda()
 {
-    if (d->m_data)
+    if (d->m_data) {
         free(d->m_data);
+        TaskProgressAgent::globalInstance()->incrementQuantity("bytes_freed", d->m_total_size);
+    }
     delete d;
 }
 
 bool Mda::allocate(long N1, long N2, long N3, long N4, long N5, long N6)
 {
+    if (d->m_data) {
+        free(d->m_data);
+        TaskProgressAgent::globalInstance()->incrementQuantity("bytes_freed", d->m_total_size);
+    }
+
     d->m_dims[0] = N1;
     d->m_dims[1] = N2;
     d->m_dims[2] = N3;
@@ -92,11 +101,10 @@ bool Mda::allocate(long N1, long N2, long N3, long N4, long N5, long N6)
     d->m_dims[5] = N6;
     d->m_total_size = N1 * N2 * N3 * N4 * N5 * N6;
 
-    if (d->m_data)
-        free(d->m_data);
     d->m_data = 0;
     if (d->m_total_size > 0) {
         d->m_data = (double*)::allocate(sizeof(double) * d->m_total_size);
+        TaskProgressAgent::globalInstance()->incrementQuantity("bytes_allocated", d->m_total_size);
         for (long i = 0; i < d->m_total_size; i++)
             d->m_data[i] = 0;
     }
@@ -133,6 +141,7 @@ bool Mda::read(const char* path)
     mda_read_header(&H, input_file);
     this->allocate(H.dims[0], H.dims[1], H.dims[2], H.dims[3], H.dims[4], H.dims[5]);
     mda_read_float64(d->m_data, &H, d->m_total_size, input_file);
+    TaskProgressAgent::globalInstance()->incrementQuantity("bytes_read", d->m_total_size * H.num_bytes_per_entry);
     fclose(input_file);
     return true;
 }
@@ -157,6 +166,7 @@ bool Mda::write32(const char* path) const
     H.num_dims = d->determine_num_dims(N1(), N2(), N3(), N4(), N5(), N6());
     mda_write_header(&H, output_file);
     mda_write_float64(d->m_data, &H, d->m_total_size, output_file);
+    TaskProgressAgent::globalInstance()->incrementQuantity("bytes_written", d->m_total_size * H.num_bytes_per_entry);
     fclose(output_file);
     return true;
 }
@@ -181,6 +191,7 @@ bool Mda::write64(const char* path) const
     H.num_dims = d->determine_num_dims(N1(), N2(), N3(), N4(), N5(), N6());
     mda_write_header(&H, output_file);
     mda_write_float64(d->m_data, &H, d->m_total_size, output_file);
+    TaskProgressAgent::globalInstance()->incrementQuantity("bytes_written", d->m_total_size * H.num_bytes_per_entry);
     fclose(output_file);
     return true;
 }
@@ -638,6 +649,7 @@ void Mda::set(double val, long i1, long i2, long i3, long i4, long i5, long i6)
 void MdaPrivate::do_construct()
 {
     m_data = (double*)::allocate(sizeof(double) * 1);
+    TaskProgressAgent::globalInstance()->incrementQuantity("bytes_allocated", 1);
     for (int i = 0; i < MDA_MAX_DIMS; i++) {
         m_dims[i] = 1;
     }
@@ -649,13 +661,16 @@ void MdaPrivate::copy_from(const Mda& other)
     const bool needResize = m_total_size != other.d->m_total_size;
     if (needResize && m_data) {
         free(m_data);
+        TaskProgressAgent::globalInstance()->incrementQuantity("bytes_freed", m_total_size);
         m_data = 0;
     }
     m_total_size = other.d->m_total_size;
     memcpy(m_dims, other.d->m_dims, MDA_MAX_DIMS * sizeof(m_dims[0]));
     if (m_total_size > 0) {
-        if (needResize)
+        if (needResize) {
             m_data = (double*)::allocate(sizeof(double) * m_total_size);
+            TaskProgressAgent::globalInstance()->incrementQuantity("bytes_allocated", m_total_size);
+        }
         memcpy(m_data, other.d->m_data, sizeof(double) * m_total_size);
     }
 }
@@ -701,30 +716,29 @@ bool MdaPrivate::safe_index(long i1, long i2, long i3, long i4, long i5, long i6
 bool MdaPrivate::read_from_text_file(const QString& path)
 {
     QString txt = read_text_file(path);
-    QStringList lines = txt.split("\n",QString::SkipEmptyParts);
+    QStringList lines = txt.split("\n", QString::SkipEmptyParts);
     QStringList lines2;
     for (int i = 0; i < lines.count(); i++) {
         QString line = lines[i].trimmed();
         if (!line.isEmpty()) {
             if (i == 0) {
                 //check whether this is a header line, if so, don't include it
-                line = line.split(",",QString::SkipEmptyParts).join(" ");
-                QList<QString> vals = line.split(QRegExp("\\s+"),QString::SkipEmptyParts);
+                line = line.split(",", QString::SkipEmptyParts).join(" ");
+                QList<QString> vals = line.split(QRegExp("\\s+"), QString::SkipEmptyParts);
                 bool ok;
                 vals.value(0).toDouble(&ok);
                 if (ok) {
                     lines2 << line;
                 }
-            }
-            else {
+            } else {
                 lines2 << line;
             }
         }
     }
     for (int i = 0; i < lines2.count(); i++) {
         QString line = lines2[i].trimmed();
-        line = line.split(",",QString::SkipEmptyParts).join(" ");
-        QList<QString> vals = line.split(QRegExp("\\s+"),QString::SkipEmptyParts);
+        line = line.split(",", QString::SkipEmptyParts).join(" ");
+        QList<QString> vals = line.split(QRegExp("\\s+"), QString::SkipEmptyParts);
         if (i == 0) {
             q->allocate(vals.count(), lines2.count());
         }
@@ -735,23 +749,24 @@ bool MdaPrivate::read_from_text_file(const QString& path)
     return true;
 }
 
-bool MdaPrivate::write_to_text_file(const QString &path)
+bool MdaPrivate::write_to_text_file(const QString& path)
 {
-    char sep=' ';
-    if (path.endsWith(".csv")) sep=',';
-    long max_num_entries=1e6;
-    if (q->N1()*q->N2()==max_num_entries) {
+    char sep = ' ';
+    if (path.endsWith(".csv"))
+        sep = ',';
+    long max_num_entries = 1e6;
+    if (q->N1() * q->N2() == max_num_entries) {
         qWarning() << "mda is too large to write text file";
         return false;
     }
     QList<QString> lines;
-    for (long i=0; i<q->N2(); i++) {
+    for (long i = 0; i < q->N2(); i++) {
         QStringList vals;
-        for (long j=0; j<q->N1(); j++) {
-            vals << QString("%1").arg(q->value(j,i));
+        for (long j = 0; j < q->N1(); j++) {
+            vals << QString("%1").arg(q->value(j, i));
         }
-        QString line=vals.join(sep);
+        QString line = vals.join(sep);
         lines << line;
     }
-    return write_text_file(path,lines.join("\n"));
+    return write_text_file(path, lines.join("\n"));
 }

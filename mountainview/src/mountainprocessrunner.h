@@ -8,22 +8,23 @@
 #define MOUNTAINSORTTHREAD_H
 
 #include "computationthread.h"
+#include "haltagent.h"
 
-class MountainsortThreadPrivate;
-class MountainsortThread : public ComputationThread {
+class MountainProcessRunnerPrivate;
+class MountainProcessRunner {
 public:
-    friend class MountainsortThreadPrivate;
-    MountainsortThread();
-    virtual ~MountainsortThread();
+    friend class MountainProcessRunnerPrivate;
+    MountainProcessRunner();
+    virtual ~MountainProcessRunner();
 
     void setProcessorName(const QString& pname);
     void setInputParameters(const QMap<QString, QVariant>& parameters);
     void setMLProxyUrl(const QString& url);
     QString makeOutputFilePath(const QString& pname);
-    void compute();
+    void runProcess(HaltAgent* halt_agent);
 
 private:
-    MountainsortThreadPrivate* d;
+    MountainProcessRunnerPrivate* d;
 };
 
 #endif // MOUNTAINSORTTHREAD_H

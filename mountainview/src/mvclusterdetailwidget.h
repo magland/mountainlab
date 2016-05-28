@@ -61,7 +61,7 @@ public:
     ///Set selected label numbers (affects highlighting)
     void setSelectedKs(const QList<int>& ks);
 
-    void setViewAgent(MVViewAgent *agent);
+    void setViewAgent(MVViewAgent* agent);
 
     void zoomAllTheWayOut();
 
@@ -85,8 +85,10 @@ signals:
     void signalSelectedKsChanged();
 private
 slots:
-    void slot_context_menu(const QPoint& pos);
+    //void slot_context_menu(const QPoint& pos);
     void slot_calculator_finished();
+    void slot_export_image();
+    void slot_toggle_stdev_shading();
 
 private:
     MVClusterDetailWidgetPrivate* d;

@@ -1,5 +1,6 @@
 #include "affinetransformation.h"
 
+#include <QList>
 #include <math.h>
 
 struct matrix44 {
@@ -41,9 +42,9 @@ void AffineTransformation::operator=(const AffineTransformation &other)
 	d->copy_from(other);
 }
 
-CVPoint AffineTransformation::map(const CVPoint &p)
+Point3D AffineTransformation::map(const Point3D &p)
 {
-	CVPoint q;
+    Point3D q;
 	q.x=d->m_matrix.d[0][0]*p.x+d->m_matrix.d[0][1]*p.y+d->m_matrix.d[0][2]*p.z+d->m_matrix.d[0][3];
 	q.y=d->m_matrix.d[1][0]*p.x+d->m_matrix.d[1][1]*p.y+d->m_matrix.d[1][2]*p.z+d->m_matrix.d[1][3];
 	q.z=d->m_matrix.d[2][0]*p.x+d->m_matrix.d[2][1]*p.y+d->m_matrix.d[2][2]*p.z+d->m_matrix.d[2][3];

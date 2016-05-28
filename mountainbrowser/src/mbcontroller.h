@@ -27,11 +27,11 @@ public:
     void setMLProxyUrl(const QString& url);
     Q_INVOKABLE QString mlProxyUrl();
 
-
     Q_INVOKABLE QString getJson(QString url_or_path);
     Q_INVOKABLE QString getText(QString url_or_path);
     Q_INVOKABLE void openSortingResult(QString json);
-private slots:
+private
+slots:
     void slot_ready_read();
 
 private:

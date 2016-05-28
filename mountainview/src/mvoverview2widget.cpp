@@ -13,17 +13,18 @@
 #include "mvclusterdetailwidget.h"
 #include "mvclipsview.h"
 #include "mvclusterwidget.h"
-#include "mvfiringrateview.h"
+#include "mvfiringeventview.h"
 #include "extract_clips.h"
 #include "tabber.h"
 #include "computationthread.h"
-#include "mountainsortthread.h"
+#include "mountainprocessrunner.h"
 #include "mvclipswidget.h"
 #include "taskprogressview.h"
 #include "mvcontrolpanel.h"
 #include "taskprogress.h"
 #include "clustermerge.h"
 #include "mvviewagent.h"
+#include "mvstatusbar.h"
 
 #include <QHBoxLayout>
 #include <QMessageBox>
@@ -46,16 +47,8 @@
 #include <QAbstractButton>
 #include "textfile.h"
 
-class CrossCorrelogramComputer : public ComputationThread {
-public:
-    //inputs
-    DiskReadMda firings;
-    int max_dt;
-
-    void compute();
-
-    Mda cross_correlograms_data;
-};
+/// TODO put styles in central place?
+#define MV_STATUS_BAR_HEIGHT 30
 
 class MVOverview2WidgetPrivate {
 public:
@@ -80,7 +73,7 @@ public:
     MVControlPanel* m_control_panel_new;
     TaskProgressView* m_task_progress_view;
 
-    QSplitter* m_splitter1, *m_splitter2;
+    QSplitter* m_splitter1, *m_splitter2, *m_left_splitter;
     TabberTabWidget* m_tabs1, *m_tabs2;
     Tabber* m_tabber;
     QProgressDialog* m_progress_dialog;
@@ -92,8 +85,6 @@ public:
 
     QList<QColor> m_channel_colors;
     QMap<QString, QColor> m_colors;
-
-    //CrossCorrelogramComputer m_cross_correlogram_computer;
 
     void create_cross_correlograms_data();
     //void create_templates_data();
@@ -213,15 +204,13 @@ MVOverview2Widget::MVOverview2Widget(QWidget* parent)
     CP->setWidgetResizable(true);
 
     d->m_task_progress_view = new TaskProgressView;
-    d->m_task_progress_view->setFixedHeight(200);
 
-    QWidget* left_widget = new QWidget;
-    QVBoxLayout* left_layout = new QVBoxLayout;
-    left_widget->setLayout(left_layout);
-    left_layout->addWidget(CP);
-    left_layout->addWidget(d->m_task_progress_view);
+    QSplitter* left_splitter = new QSplitter(Qt::Vertical);
+    left_splitter->addWidget(CP);
+    left_splitter->addWidget(d->m_task_progress_view);
+    d->m_left_splitter = left_splitter;
 
-    splitter1->addWidget(left_widget);
+    splitter1->addWidget(left_splitter);
     splitter1->addWidget(splitter2);
 
     d->m_tabber = new Tabber;
@@ -231,9 +220,15 @@ MVOverview2Widget::MVOverview2Widget(QWidget* parent)
     splitter2->addWidget(d->m_tabs1);
     splitter2->addWidget(d->m_tabs2);
 
-    QHBoxLayout* hlayout = new QHBoxLayout;
-    hlayout->addWidget(splitter1);
-    this->setLayout(hlayout);
+    MVStatusBar* status_bar = new MVStatusBar();
+    status_bar->setFixedHeight(MV_STATUS_BAR_HEIGHT);
+
+    QVBoxLayout* vlayout = new QVBoxLayout;
+    vlayout->setSpacing(0);
+    vlayout->setMargin(0);
+    vlayout->addWidget(splitter1);
+    vlayout->addWidget(status_bar);
+    this->setLayout(vlayout);
 
     QStringList color_strings;
     color_strings
@@ -730,18 +725,18 @@ void MVOverview2Widget::slot_update_buttons()
     d->set_button_enabled("open-firing-events", (something_selected) && (has_peaks));
     d->set_button_enabled("find-nearby-events", d->m_selected_ks.count() >= 2);
 
-    d->set_button_enabled("annotate_selected",something_selected);
-    d->set_button_enabled("merge_selected",d->m_selected_ks.count()>=2);
-    d->set_button_enabled("unmerge_selected",something_selected);
-    d->set_button_enabled("export_mountainview_document",true);
-    d->set_button_enabled("export_original_firings",true);
-    d->set_button_enabled("export_filtered_firings",true);
+    d->set_button_enabled("annotate_selected", something_selected);
+    d->set_button_enabled("merge_selected", d->m_selected_ks.count() >= 2);
+    d->set_button_enabled("unmerge_selected", something_selected);
+    d->set_button_enabled("export_mountainview_document", true);
+    d->set_button_enabled("export_original_firings", true);
+    d->set_button_enabled("export_filtered_firings", true);
 }
 
 void MVOverview2WidgetPrivate::update_sizes()
 {
     float W0 = q->width();
-    float H0 = q->height();
+    float H0 = q->height() - MV_STATUS_BAR_HEIGHT;
 
     int W1 = W0 / 3;
     if (W1 < 150)
@@ -763,6 +758,21 @@ void MVOverview2WidgetPrivate::update_sizes()
         QList<int> sizes;
         sizes << H1 << H2;
         m_splitter2->setSizes(sizes);
+    }
+    {
+        int tv_height;
+        if (H0 > 1200) {
+            tv_height = 300;
+        }
+        if (H0 > 900) {
+            tv_height = 200;
+        } else {
+            tv_height = 100;
+        }
+        int cp_height = H0 - tv_height;
+        QList<int> sizes;
+        sizes << cp_height << tv_height;
+        m_left_splitter->setSizes(sizes);
     }
 }
 
@@ -846,7 +856,7 @@ void MVOverview2WidgetPrivate::do_shell_split_and_event_filter()
 {
     TaskProgress task("do_shell_split_and_event_filter()");
 
-    MountainsortThread MT;
+    MountainProcessRunner MT;
     QString processor_name = "mv_firings_filter";
 
     MT.setProcessorName(processor_name);
@@ -881,7 +891,8 @@ void MVOverview2WidgetPrivate::do_shell_split_and_event_filter()
 
     QString firings_out = MT.makeOutputFilePath("firings_out");
     QString original_cluster_numbers_out = MT.makeOutputFilePath("original_cluster_numbers");
-    MT.compute();
+    /// TODO this should be called in a separate thread MT.runProcess
+    MT.runProcess(0);
     m_firings.setPath(firings_out);
     task.log("m_firings path = " + firings_out);
     task.log(QString("m_firings.N1()=%1 m_firings.N2()=%2").arg(m_firings.N1()).arg(m_firings.N2()));
@@ -1076,7 +1087,7 @@ void MVOverview2WidgetPrivate::open_firing_events()
         QMessageBox::information(q, "Unable to open firing events", "You must select at least one cluster.");
         return;
     }
-    MVFiringRateView* X = new MVFiringRateView;
+    MVFiringEventView* X = new MVFiringEventView;
     X->setProperty("widget_type", "firing_events");
     X->setProperty("ks", int_list_to_string_list(ks));
     //q->connect(X,SIGNAL(currentEventChanged()),q,SLOT(slot_firing_events_view_current_event_changed()));
@@ -1442,7 +1453,7 @@ void MVOverview2WidgetPrivate::update_widget(QWidget* W)
         WW->setFirings(m_firings);
         WW->setLabelsToUse(ks);
     } else if (widget_type == "firing_events") {
-        MVFiringRateView* WW = (MVFiringRateView*)W;
+        MVFiringEventView* WW = (MVFiringEventView*)W;
         QList<int> ks = string_list_to_int_list(WW->property("ks").toStringList());
         QSet<int> ks_set = ks.toSet();
 
@@ -1794,7 +1805,7 @@ void MVOverview2WidgetPrivate::set_current_event(MVEvent evt)
             MVClusterWidget* WW = (MVClusterWidget*)W;
             WW->setCurrentEvent(evt);
         } else if (widget_type == "firing_events") {
-            MVFiringRateView* WW = (MVFiringRateView*)W;
+            MVFiringEventView* WW = (MVFiringEventView*)W;
             WW->setCurrentEvent(evt);
         } else if (widget_type == "cluster_details") {
             MVClusterDetailWidget* WW = (MVClusterDetailWidget*)W;
@@ -1831,10 +1842,18 @@ void DownloadComputer::compute()
     TaskProgress task("Downlading");
     task.setDescription(QString("Downloading %1 to %2").arg(source_path).arg(dest_path));
     DiskReadMda X(source_path);
+    X.setHaltAgent(this);
     Mda Y;
     task.setProgress(0.2);
     task.log(QString("Reading/Downloading %1x%2x%3").arg(X.N1()).arg(X.N2()).arg(X.N3()));
-    X.readChunk(Y, 0, 0, 0, X.N1(), X.N2(), X.N3());
+    if (!X.readChunk(Y, 0, 0, 0, X.N1(), X.N2(), X.N3())) {
+        if (this->stopRequested()) {
+            task.error("Halted download: " + source_path);
+        } else {
+            task.error("Failed to readChunk from: " + source_path);
+        }
+        return;
+    }
     task.setProgress(0.8);
     if (use_float64) {
         task.log("Writing 64-bit to " + dest_path);
@@ -1920,91 +1939,4 @@ void MVOverview2WidgetPrivate::set_button_enabled(QString name, bool val)
     QAbstractButton* B = m_control_panel_new->findButton(name);
     if (B)
         B->setEnabled(val);
-}
-
-typedef QList<long> IntList;
-void CrossCorrelogramComputer::compute()
-{
-    QList<long> times, labels;
-    long L = firings.N2();
-
-    printf("Setting up times and labels...\n");
-    for (int n = 0; n < L; n++) {
-        times << (long)firings.value(1, n);
-        labels << (long)firings.value(2, n);
-    }
-    int K = 0;
-    for (int n = 0; n < labels.count(); n++) {
-        if (labels[n] > K)
-            K = labels[n];
-    }
-
-    printf("Sorting by times...\n");
-    QList<long> indices = get_sort_indices(times);
-    QList<long> times2, labels2;
-    for (int i = 0; i < indices.count(); i++) {
-        times2 << times[indices[i]];
-        labels2 << labels[indices[i]];
-    }
-    times = times2;
-    labels = labels2;
-
-    printf("Initializing output...\n");
-    QList<IntList> out;
-    IntList empty_list;
-    for (int k1 = 1; k1 <= K; k1++) {
-        for (int k2 = 1; k2 <= K; k2++) {
-            out << empty_list;
-        }
-    }
-
-    printf("Setting time differences...\n");
-    int i1 = 0;
-    for (int i2 = 0; i2 < L; i2++) {
-        if (i2 % 100 == 0) {
-            //set_progress("Computing", "Creating cross correlograms data", i2 * 1.0 / L);
-        }
-        while ((i1 + 1 < L) && (times[i1] < times[i2] - max_dt))
-            i1++;
-        int k2 = labels[i2];
-        int t2 = times[i2];
-        if (k2 >= 1) {
-            for (int jj = i1; jj < i2; jj++) {
-                int k1 = labels[jj];
-                int t1 = times[jj];
-                if (k1 >= 1) {
-                    out[(k1 - 1) + K * (k2 - 1)] << t2 - t1;
-                    out[(k2 - 1) + K * (k1 - 1)] << t1 - t2;
-                }
-            }
-        }
-    }
-
-    printf("Counting...\n");
-    int ct = 0;
-    for (int k1 = 1; k1 <= K; k1++) {
-        for (int k2 = 1; k2 <= K; k2++) {
-            ct += out[(k1 - 1) + K * (k2 - 1)].count();
-        }
-    }
-
-    printf("Creating mda...\n");
-    Mda ret;
-    ret.allocate(3, ct);
-
-    ct = 0;
-    for (int k1 = 1; k1 <= K; k1++) {
-        for (int k2 = 1; k2 <= K; k2++) {
-            IntList* tmp = &out[(k1 - 1) + K * (k2 - 1)];
-            for (int jj = 0; jj < tmp->count(); jj++) {
-                ret.setValue(k1, 0, ct);
-                ret.setValue(k2, 1, ct);
-                ret.setValue((*tmp)[jj], 2, ct);
-                ct++;
-            }
-        }
-    }
-    printf(".\n");
-
-    cross_correlograms_data = ret;
 }

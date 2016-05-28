@@ -2,8 +2,8 @@
 #include <QDir>
 #include <QDebug>
 #include "usagetracking.h"
-#include "cvcommon.h"
 #include "sscommon.h"
+#include "sscontroller.h"
 
 class DiskWriteMdaOldPrivate {
 public:

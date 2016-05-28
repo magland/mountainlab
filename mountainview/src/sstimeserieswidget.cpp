@@ -16,7 +16,6 @@
 #include <QFileDialog>
 #include <QObjectList>
 #include <QTextBrowser>
-#include "cvcommon.h"
 
 void do_wait(int ms)
 {

@@ -29,7 +29,7 @@ HEADERS += \
     mvclipsview.h \
     mvclusterview.h \
     mvclusterwidget.h \
-    mvfiringrateview.h \
+    mvfiringeventview.h \
     diskarraymodel_new.h \
     sstimeserieswidget.h \
     sstimeseriesview.h \
@@ -40,22 +40,20 @@ HEADERS += \
     sslabelsmodel.h \
     sslabelsmodel1.h \
     sscommon.h \
-    cvcommon.h \
     tabber.h \
     imagesavedialog.h \
-    run_mountainview_script.h \
     closemehandler.h \
     computationthread.h \
     set_progress.h \
     mvcrosscorrelogramswidget2.h \
-    mountainsortthread.h \
+    mountainprocessrunner.h \
     mvclipswidget.h \
-    taskprogress.h \
     taskprogressview.h \
     mvcontrolpanel.h \
     flowlayout.h \
     clustermerge.h \
-    mvviewagent.h
+    mvviewagent.h \
+    mvstatusbar.h
 SOURCES += mountainviewmain.cpp \
     histogramview.cpp \
     mvstatisticswidget.cpp \
@@ -70,7 +68,7 @@ SOURCES += mountainviewmain.cpp \
     mvclipsview.cpp \
     mvclusterview.cpp \
     mvclusterwidget.cpp \
-    mvfiringrateview.cpp \
+    mvfiringeventview.cpp \
     diskarraymodel_new.cpp \
     sstimeserieswidget.cpp \
     sstimeseriesview.cpp \
@@ -80,22 +78,20 @@ SOURCES += mountainviewmain.cpp \
     plotarea.cpp \
     sslabelsmodel1.cpp \
     sscommon.cpp \
-    cvcommon.cpp \
     tabber.cpp \
     imagesavedialog.cpp \
-    run_mountainview_script.cpp \
     closemehandler.cpp \
     computationthread.cpp \
     set_progress.cpp \
     mvcrosscorrelogramswidget2.cpp \
-    mountainsortthread.cpp \
+    mountainprocessrunner.cpp \
     mvclipswidget.cpp \
-    taskprogress.cpp \
     taskprogressview.cpp \
     mvcontrolpanel.cpp \
     flowlayout.cpp \
     clustermerge.cpp \
-    mvviewagent.cpp
+    mvviewagent.cpp \
+    mvstatusbar.cpp
 
 INCLUDEPATH += ../../common/commandlineparams
 VPATH += ../../common/commandlineparams
@@ -104,8 +100,8 @@ SOURCES += commandlineparams.cpp
 
 INCLUDEPATH += ../../common/utils
 VPATH += ../../common/utils
-HEADERS += textfile.h
-SOURCES += textfile.cpp
+HEADERS += textfile.h haltagent.h taskprogress.h toolbuttonmenu.h
+SOURCES += textfile.cpp haltagent.cpp taskprogress.cpp toolbuttonmenu.cpp
 
 INCLUDEPATH += ../../mountainsort/src/utils
 DEPENDPATH += ../../mountainsort/src/utils

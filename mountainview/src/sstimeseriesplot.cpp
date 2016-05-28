@@ -165,6 +165,7 @@ SSTimeSeriesPlot::~SSTimeSeriesPlot()
 	foreach (Mda *X,d->m_multiscale_max_arrays) {
 		delete X;
 	}*/
+    d->m_data_loader.stopComputation(); // important do take care of this before things start getting destructed!
     if (d->m_labels) {
         if (d->m_labels_is_owner)
             delete d->m_labels;
@@ -212,8 +213,7 @@ void SSTimeSeriesPlot::paintPlot(QPainter* painter, int W, int H)
 void SSTimeSeriesPlot::mousePressEvent(QMouseEvent* evt)
 {
     if (evt->pos().y() <= d->m_control_panel_height) {
-    }
-    else {
+    } else {
         SSAbstractPlot::mousePressEvent(evt);
     }
 }
@@ -224,8 +224,7 @@ void SSTimeSeriesPlot::mouseReleaseEvent(QMouseEvent* evt)
         float frac0 = evt->pos().x() * 1.0 / d->m_bar_width;
         int t0 = (int)((d->m_max_timepoint + 1) * frac0);
         emit requestMoveToTimepoint(t0);
-    }
-    else {
+    } else {
         SSAbstractPlot::mouseReleaseEvent(evt);
     }
 }
@@ -233,8 +232,7 @@ void SSTimeSeriesPlot::mouseReleaseEvent(QMouseEvent* evt)
 void SSTimeSeriesPlot::mouseMoveEvent(QMouseEvent* evt)
 {
     if (evt->pos().y() <= d->m_control_panel_height) {
-    }
-    else {
+    } else {
         SSAbstractPlot::mouseMoveEvent(evt);
     }
 }
@@ -285,8 +283,7 @@ void SSTimeSeriesPlot::setData(SSARRAY* data)
                 }
             }
         }
-    }
-    else {
+    } else {
         for (int ch = 0; ch < M; ch++) {
             d->m_minvals[ch] = 0;
             d->m_maxvals[ch] = 1;
@@ -397,8 +394,7 @@ void SSTimeSeriesPlotPrivate::setup_plot_area()
             m_plot_minvals[i] = m_yrange_minvals[i] / q->verticalZoomFactor();
             m_plot_maxvals[i] = m_yrange_maxvals[i] / q->verticalZoomFactor();
         }
-    }
-    else if ((M > 0) && (m_minvals.size() > 0)) {
+    } else if ((M > 0) && (m_minvals.size() > 0)) {
         for (int i = 0; i < M; i++) {
             m_plot_minvals[i] = m_minvals.value(i) / q->verticalZoomFactor();
             m_plot_maxvals[i] = m_maxvals.value(i) / q->verticalZoomFactor();
@@ -439,38 +435,33 @@ void SSTimeSeriesPlotPrivate::setup_plot_area()
             if (m_use_fixed_vertical_channel_spacing) {
                 m_plot_y1[ch] = offset + m_plot_minvals[ch] - max00;
                 offset += m_fixed_vertical_channel_spacing;
-            }
-            else {
+            } else {
                 m_plot_y1[ch] = offset;
                 offset += (-m_plot_minvals[ch]);
             }
             m_plot_offsets[ch] = offset;
             if (m_use_fixed_vertical_channel_spacing) {
                 m_plot_y1[ch] = offset + m_plot_maxvals[ch] + max00;
-            }
-            else {
+            } else {
                 offset += m_plot_maxvals[ch];
                 offset += max00 / 20;
                 m_plot_y2[ch] = offset;
             }
         }
-    }
-    else {
+    } else {
         for (int ch = M - 1; ch >= 0; ch--) { // downwards ordering
 
             if (m_use_fixed_vertical_channel_spacing) {
                 m_plot_y1[ch] = offset + m_plot_minvals[ch] - max00;
                 offset -= m_fixed_vertical_channel_spacing;
-            }
-            else {
+            } else {
                 m_plot_y1[ch] = offset;
                 offset += (-m_plot_minvals[ch]);
             }
             m_plot_offsets[ch] = offset;
             if (m_use_fixed_vertical_channel_spacing) {
                 m_plot_y2[ch] = offset + m_plot_maxvals[ch] + max00;
-            }
-            else {
+            } else {
                 offset += m_plot_maxvals[ch];
                 offset += max00 / 20;
                 m_plot_y2[ch] = offset;
@@ -499,8 +490,7 @@ void SSTimeSeriesPlotPrivate::setup_plot_area()
     if (msfactor == 1) {
         x1 = xrange_min;
         x2 = xrange_max;
-    }
-    else {
+    } else {
         x1 = (xrange_min / msfactor) * msfactor;
         x2 = (xrange_max / msfactor) * msfactor;
     }
@@ -512,6 +502,7 @@ void SSTimeSeriesPlotPrivate::setup_plot_area()
     m_data_loader.array_model = m_data;
 
     //m_data_loader.startComputation();
+    /// TODO do we want to do this asynchronously?
     m_data_loader.compute();
 
     //the label markers
@@ -590,8 +581,7 @@ void SSTimeSeriesPlotPrivate::draw_control_panel(QPainter* P)
     int t0 = tmp.x, t1 = tmp.y;
     if (t0 < 0) {
         P->fillRect(RR1, col2);
-    }
-    else {
+    } else {
         int num_timepoints = m_max_timepoint + 1;
         int xpix0 = bar_width * 1.0 * t0 / num_timepoints;
         int xpix1 = bar_width * 1.0 * t1 / num_timepoints;
@@ -682,8 +672,7 @@ void SSTimeSeriesPlot::slot_data_loaded()
                 label0 = QString("%1").arg(ch + 1);
             SS.name = label0;
             d->m_plot_area.addSeries(SS);
-        }
-        else {
+        } else {
 
             Mda xvals;
             xvals.allocate(1, (x2 - x1) / msfactor * 2);
@@ -736,7 +725,5 @@ void SSTimeSeriesPlot::setYRange(const Vec2& range)
 
 void DataLoaderThread::compute()
 {
-    TaskProgress task("SSTimeSeriesPlot Data Loader");
-    task.log(QString("loadData %1 %2 %3").arg(msfactor).arg(x1 / msfactor).arg(x2 / msfactor));
     data = array_model->loadData(msfactor, x1 / msfactor, x2 / msfactor);
 }

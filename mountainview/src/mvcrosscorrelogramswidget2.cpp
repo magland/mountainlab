@@ -91,7 +91,7 @@ MVCrossCorrelogramsWidget2::MVCrossCorrelogramsWidget2()
 
 MVCrossCorrelogramsWidget2::~MVCrossCorrelogramsWidget2()
 {
-    d->m_computer.stopComputation();
+    d->m_computer.stopComputation(); // important do take care of this before things start getting destructed!
     delete d;
 }
 
@@ -113,7 +113,8 @@ void MVCrossCorrelogramsWidget2::setLabelPairs(const QList<int>& labels1, const 
 void MVCrossCorrelogramsWidget2::setColors(const QMap<QString, QColor>& colors)
 {
     d->m_colors = colors;
-    foreach (HistogramView* V, d->m_histogram_views) {
+    foreach(HistogramView * V, d->m_histogram_views)
+    {
         V->setColors(d->m_colors);
     }
 }
@@ -170,7 +171,8 @@ QList<int> MVCrossCorrelogramsWidget2::selectedLabels1()
     QList<int> tmp = d->m_selected_indices.toList();
     qSort(tmp);
     QList<int> ret;
-    foreach (int ind, tmp) {
+    foreach(int ind, tmp)
+    {
         ret << d->m_labels1.value(ind);
     }
     return ret;
@@ -181,7 +183,8 @@ QList<int> MVCrossCorrelogramsWidget2::selectedLabels2()
     QList<int> tmp = d->m_selected_indices.toList();
     qSort(tmp);
     QList<int> ret;
-    foreach (int ind, tmp) {
+    foreach(int ind, tmp)
+    {
         ret << d->m_labels2.value(ind);
     }
     return ret;
@@ -218,12 +221,12 @@ QList<int> MVCrossCorrelogramsWidget2::selectedIndices()
 
 bool sets_match2(const QSet<int>& S1, const QSet<int>& S2)
 {
-    foreach (int a, S1)
-        if (!S2.contains(a))
-            return false;
-    foreach (int a, S2)
-        if (!S1.contains(a))
-            return false;
+    foreach(int a, S1)
+    if (!S2.contains(a))
+        return false;
+    foreach(int a, S2)
+    if (!S1.contains(a))
+        return false;
     return true;
 }
 
@@ -425,8 +428,7 @@ void MVCrossCorrelogramsWidget2::slot_histogram_view_control_clicked()
         d->do_highlighting();
         if (d->m_current_index <= 0)
             setCurrentIndex(index);
-    }
-    else {
+    } else {
         d->m_selected_indices.remove(index);
         d->do_highlighting();
     }
@@ -438,8 +440,7 @@ void MVCrossCorrelogramsWidget2::slot_histogram_view_clicked()
     int index = sender()->property("index").toInt();
     d->m_selected_indices.clear();
     if (d->m_current_index == index) {
-    }
-    else {
+    } else {
         setCurrentIndex(index);
         d->m_selected_indices.clear();
         d->m_selected_indices << index;
@@ -547,14 +548,12 @@ void MVCrossCorrelogramsWidget2Private::do_highlighting()
         int index = HV->property("index").toInt();
         if (index == m_current_index) {
             HV->setCurrent(true);
-        }
-        else {
+        } else {
             HV->setCurrent(false);
         }
         if (m_selected_indices.contains(index)) {
             HV->setSelected(true);
-        }
-        else {
+        } else {
             HV->setSelected(false);
         }
     }
@@ -569,8 +568,7 @@ void MVCrossCorrelogramsWidget2Private::start_computation()
     m_computer.max_dt = m_max_dt;
     if (m_view_agent) {
         m_computer.cluster_merge = m_view_agent->clusterMerge();
-    }
-    else {
+    } else {
         m_computer.cluster_merge.clear();
     }
     m_computer.startComputation();

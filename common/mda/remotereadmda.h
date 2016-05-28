@@ -9,22 +9,23 @@
 
 #include <QString>
 #include "mda.h"
+#include "haltagent.h"
 
 class RemoteReadMdaPrivate;
 /**
  * @brief Do not use this class directly -- it is used by DiskReadMda
  */
-class RemoteReadMda
-{
+class RemoteReadMda {
 public:
     friend class RemoteReadMdaPrivate;
-    RemoteReadMda(const QString &path="");
-    RemoteReadMda(const RemoteReadMda &other);
-    void operator=(const RemoteReadMda &other);
+    RemoteReadMda(const QString& path = "");
+    RemoteReadMda(const RemoteReadMda& other);
+    void operator=(const RemoteReadMda& other);
     virtual ~RemoteReadMda();
 
-    void setPath(const QString &path);
+    void setPath(const QString& path);
     QString path() const;
+    void setHaltAgent(HaltAgent* halt_agent);
 
     long N1();
     long N2();
@@ -32,14 +33,13 @@ public:
     QDateTime fileLastModified();
 
     ///Retrieve a chunk of the vectorized data of size 1xN starting at position i
-    bool readChunk(Mda &X,long i,long size) const;
+    bool readChunk(Mda& X, long i, long size) const;
 
 private:
-    RemoteReadMdaPrivate *d;
+    RemoteReadMdaPrivate* d;
 };
 
 void unit_test_remote_read_mda_2(const QString& path);
 void unit_test_remote_read_mda();
 
 #endif // REMOTEREADMDA_H
-

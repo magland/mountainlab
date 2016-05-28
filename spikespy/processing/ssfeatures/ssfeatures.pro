@@ -36,8 +36,8 @@ SOURCES += cachemanager.cpp
 INCLUDEPATH += ../../../common/utils
 DEPENDPATH += ../../../common/utils
 VPATH += ../../../common/utils
-HEADERS += textfile.h
-SOURCES += textfile.cpp
+HEADERS += textfile.h taskprogress.h
+SOURCES += textfile.cpp taskprogress.cpp
 
 INCLUDEPATH += ../../../common/commandlineparams
 VPATH += ../../../common/commandlineparams

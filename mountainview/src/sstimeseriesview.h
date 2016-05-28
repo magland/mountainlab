@@ -19,13 +19,13 @@ public:
     explicit SSTimeSeriesView(QWidget* parent = 0);
     ~SSTimeSeriesView();
 
-    Q_INVOKABLE void setData(DiskArrayModel_New* data, bool is_owner = false);
-    Q_INVOKABLE DiskArrayModel_New* data();
-    //Q_INVOKABLE void setLabels(Mda *T,Mda *L);
-    Q_INVOKABLE void setLabels(DiskReadMda* TL, bool is_owner = false);
-    Q_INVOKABLE void setCompareLabels(DiskReadMda* TL, bool is_owner = false);
-    //Q_INVOKABLE void setConnectZeros(bool val);
-    Q_INVOKABLE void setClipMode(bool val);
+    void setData(DiskArrayModel_New* data, bool is_owner = false);
+    DiskArrayModel_New* data();
+    //void setLabels(Mda *T,Mda *L);
+    void setLabels(DiskReadMda* TL, bool is_owner = false);
+    void setCompareLabels(DiskReadMda* TL, bool is_owner = false);
+    //void setConnectZeros(bool val);
+    void setClipMode(bool val);
     bool clipMode();
 
     void setChannelLabels(const QStringList& labels);
@@ -41,7 +41,8 @@ public:
 
     SSTimeSeriesPlot* plot();
 
-private slots:
+private
+slots:
     void slot_request_move_to_timepoint(int t0);
     void slot_context_menu(const QPoint& pos);
 
@@ -57,7 +58,8 @@ private:
 
 signals:
 
-private slots:
+private
+slots:
 };
 
 #endif // SSTIMESERIESVIEW_H

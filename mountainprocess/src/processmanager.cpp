@@ -59,14 +59,14 @@ ProcessManager::~ProcessManager()
     delete d;
 }
 
-void ProcessManager::setServerUrls(const QStringList &urls)
+void ProcessManager::setServerUrls(const QStringList& urls)
 {
     d->m_server_urls = urls;
 }
 
-void ProcessManager::setServerBasePath(const QString &path)
+void ProcessManager::setServerBasePath(const QString& path)
 {
-    d->m_server_base_path=path;
+    d->m_server_base_path = path;
 }
 
 bool ProcessManager::loadProcessors(const QString& path, bool recursive)

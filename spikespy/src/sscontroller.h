@@ -16,5 +16,16 @@ public:
 	Q_INVOKABLE QObject *readArray(QString path);
 };
 
+class CleanupObject : public QObject {
+public:
+    Q_OBJECT
+public slots:
+    void closing();
+};
+
+void removeOnClose(const QString &path);
+
+
+
 
 #endif // SSCONTROLLER_H

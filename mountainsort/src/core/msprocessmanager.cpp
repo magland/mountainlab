@@ -24,6 +24,7 @@
 #include "msmisc.h"
 #include "mv_firings_filter_processor.h"
 #include "mv_subfirings_processor.h"
+#include "mv_compute_templates_processor.h"
 #include "extract_clips_processor.h"
 #include "extract_clips_features_processor.h"
 #include "merge_labels_processor.h"
@@ -84,6 +85,7 @@ void MSProcessManager::loadDefaultProcessors()
     loadProcessor(new mask_out_artifacts_Processor);
     loadProcessor(new fit_stage_Processor);
     loadProcessor(new compute_templates_Processor);
+    loadProcessor(new mv_compute_templates_Processor);
     loadProcessor(new mv_firings_filter_Processor);
     loadProcessor(new mv_subfirings_Processor);
     loadProcessor(new extract_clips_Processor);

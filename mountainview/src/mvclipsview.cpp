@@ -14,7 +14,8 @@ public:
     //double currentClipTimepoint();
     MVEvent currentEvent();
     void setCurrentEvent(MVEvent evt);
-public slots:
+public
+slots:
     void slot_current_x_changed();
 
 private:

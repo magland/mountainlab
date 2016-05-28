@@ -26,8 +26,8 @@ SOURCES += commandlineparams.cpp
 
 INCLUDEPATH += ../../../../common/utils
 VPATH += ../../../../common/utils
-HEADERS += textfile.h
-SOURCES += textfile.cpp
+HEADERS += textfile.h taskprogress.h
+SOURCES += textfile.cpp taskprogress.cpp
 
 DEFINES += USE_REMOTE_MDA
 INCLUDEPATH += ../../../../common/mda

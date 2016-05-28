@@ -60,6 +60,8 @@ public:
     virtual ~TaskProgressAgent();
     void addTask(TaskProgress* T);
     void removeTask(TaskProgress* T);
+    void incrementQuantity(QString name, double val);
+    double getQuantity(QString name);
 
     QList<TaskInfo> activeTasks();
     QList<TaskInfo> completedTasks();
@@ -67,6 +69,7 @@ public:
     static TaskProgressAgent* globalInstance();
 signals:
     void tasksChanged();
+    void quantitiesChanged();
 private slots:
     void slot_schedule_emit_tasks_changed();
     void slot_emit_tasks_changed();

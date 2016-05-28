@@ -9,7 +9,7 @@
 #include "msmisc.h"
 #include <math.h>
 #include "extract_clips.h"
-#include "mountainsortthread.h"
+#include "mountainprocessrunner.h"
 
 class MVClusterWidgetComputer : public ComputationThread {
 public:
@@ -166,6 +166,7 @@ MVClusterWidget::MVClusterWidget()
 
 MVClusterWidget::~MVClusterWidget()
 {
+    d->m_computer.stopComputation(); // important do take care of this before things start getting destructed!
     delete d;
 }
 
@@ -418,7 +419,7 @@ void MVClusterWidgetComputer::compute()
             labels_str += QString("%1").arg(x);
         }
 
-        MountainsortThread MT;
+        MountainProcessRunner MT;
         QString processor_name = "mv_subfirings";
         MT.setProcessorName(processor_name);
 
@@ -431,12 +432,12 @@ void MVClusterWidgetComputer::compute()
 
         firings_out_path = MT.makeOutputFilePath("firings_out");
 
-        MT.compute();
+        MT.runProcess(this);
     }
 
     QString features_path;
     {
-        MountainsortThread MT;
+        MountainProcessRunner MT;
         QString processor_name = "extract_clips_features";
         MT.setProcessorName(processor_name);
 
@@ -451,10 +452,12 @@ void MVClusterWidgetComputer::compute()
 
         features_path = MT.makeOutputFilePath("features");
 
-        MT.compute();
+        MT.runProcess(this);
     }
     firings_subset = DiskReadMda(firings_out_path);
+    firings_subset.setHaltAgent(this);
 
     DiskReadMda features(features_path);
+    features.setHaltAgent(this);
     features.readChunk(data, 0, 0, features.N1(), features.N2());
 }

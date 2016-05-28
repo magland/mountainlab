@@ -9,6 +9,8 @@
 #include <QMutex>
 #include <QTimer>
 #include <QDebug>
+#include <QTime>
+#include <QCoreApplication>
 
 class ComputationThreadPrivate {
 public:
@@ -39,6 +41,7 @@ ComputationThread::ComputationThread()
 
 ComputationThread::~ComputationThread()
 {
+    this->stopComputation();
     delete d;
 }
 
@@ -60,27 +63,20 @@ void ComputationThread::startComputation()
     d->schedule_start();
 }
 
-void ComputationThread::stopComputation()
+bool ComputationThread::stopComputation(int timeout)
 {
     {
         QMutexLocker locker(&d->m_mutex);
         if (!d->m_is_computing)
-            return;
+            return true;
         d->m_stop_requested = true; //attempt to end gracefully
     }
-    if (this->isRunning()) {
-        this->wait(1000); //we will wait a second
+    QTime timer;
+    timer.start();
+    while (((timer.elapsed() < timeout) || (timeout == 0)) && (this->isRunning())) {
+        qApp->processEvents();
     }
-    if (this->isRunning()) {
-        qWarning() << "TERMINATING COMPUTATION";
-        this->terminate();
-    }
-    if (this->isRunning()) {
-        this->wait(1000);
-    }
-    if (this->isRunning()) {
-        qWarning() << "Unable to terminate computation thread";
-    }
+    return (!this->isRunning());
 }
 
 bool ComputationThread::isComputing()
@@ -130,8 +126,7 @@ void ComputationThread::run()
         d->m_is_finished = true;
         d->m_is_computing = false;
         emit computationFinished();
-    }
-    else {
+    } else {
     }
     if (d->m_delete_on_complete)
         this->deleteLater();

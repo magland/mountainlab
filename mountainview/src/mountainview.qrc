@@ -1,5 +1,6 @@
-<!DOCTYPE RCC><RCC version="1.0">
- <qresource>
-    <file>statistics.css</file>
- </qresource>
- </RCC>
+<RCC>
+    <qresource prefix="/">
+        <file>statistics.css</file>
+        <file>images/gear.png</file>
+    </qresource>
+</RCC>

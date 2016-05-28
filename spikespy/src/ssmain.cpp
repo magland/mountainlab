@@ -5,7 +5,6 @@
 #include <QStringList>
 #include "textfile.h"
 #include "usagetracking.h"
-#include "cvcommon.h"
 #include "closemehandler.h"
 
 /*
@@ -93,8 +92,8 @@ int main(int argc, char *argv[]) {
 		qWarning() << "Error running script: "+result.toString();
 	}
 
-	CleanupObject cleanup_object;
-	QObject::connect(&a, SIGNAL(aboutToQuit()), &cleanup_object, SLOT(closing()));
+    CleanupObject cleanup_object;
+    QObject::connect(&a, SIGNAL(aboutToQuit()), &cleanup_object, SLOT(closing()));
 
 	int ret=a.exec();
 

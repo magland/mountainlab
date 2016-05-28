@@ -4,7 +4,7 @@
 ** Created: 4/4/2016
 *******************************************************/
 
-#include "mountainsortthread.h"
+#include "mountainprocessrunner.h"
 #include <QCoreApplication>
 #include <QMap>
 #include <QProcess>
@@ -20,9 +20,9 @@
 #include "mlutils.h"
 #include "taskprogress.h"
 
-class MountainsortThreadPrivate {
+class MountainProcessRunnerPrivate {
 public:
-    MountainsortThread* q;
+    MountainProcessRunner* q;
     QString m_processor_name;
     QMap<QString, QVariant> m_parameters;
     //QString m_mscmdserver_url;
@@ -31,35 +31,35 @@ public:
     QString create_temporary_output_file_name(const QString& remote_url, const QString& processor_name, const QMap<QString, QVariant>& params, const QString& parameter_name);
 };
 
-MountainsortThread::MountainsortThread()
+MountainProcessRunner::MountainProcessRunner()
 {
-    d = new MountainsortThreadPrivate;
+    d = new MountainProcessRunnerPrivate;
     d->q = this;
 }
 
-MountainsortThread::~MountainsortThread()
+MountainProcessRunner::~MountainProcessRunner()
 {
     delete d;
 }
 
-void MountainsortThread::setProcessorName(const QString& pname)
+void MountainProcessRunner::setProcessorName(const QString& pname)
 {
     d->m_processor_name = pname;
 }
 
-QString MountainsortThread::makeOutputFilePath(const QString& pname)
+QString MountainProcessRunner::makeOutputFilePath(const QString& pname)
 {
     QString ret = d->create_temporary_output_file_name(d->m_mlproxy_url, d->m_processor_name, d->m_parameters, pname);
     d->m_parameters[pname] = ret;
     return ret;
 }
 
-void MountainsortThread::setInputParameters(const QMap<QString, QVariant>& parameters)
+void MountainProcessRunner::setInputParameters(const QMap<QString, QVariant>& parameters)
 {
     d->m_parameters = parameters;
 }
 
-void MountainsortThread::setMLProxyUrl(const QString& url)
+void MountainProcessRunner::setMLProxyUrl(const QString& url)
 {
     d->m_mlproxy_url = url;
 }
@@ -87,7 +87,7 @@ QVariantMap json_obj_to_variantmap(QJsonObject obj)
     return ret;
 }
 
-QJsonObject http_post(QString url, QJsonObject req)
+QJsonObject http_post(QString url, QJsonObject req, HaltAgent* halt_agent)
 {
     QTime timer;
     timer.start();
@@ -101,17 +101,38 @@ QJsonObject http_post(QString url, QJsonObject req)
     QObject::connect(reply, &QNetworkReply::readyRead, [&]() {
         ret+=reply->readAll();
     });
+    /*
     QObject::connect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
     loop.exec();
-    printf("RECEIVED TEXT (%d ms, %d bytes) from POST %s\n", timer.elapsed(), ret.count(), url.toLatin1().data());
-    QString str = ret.mid(0, 5000) + "...";
-    str.replace("\\n", "\n");
-    printf("%s\n", (str.toLatin1().data()));
-    QJsonObject obj = QJsonDocument::fromJson(ret.toLatin1()).object();
-    return obj;
+    */
+    while (!reply->isFinished()) {
+        if ((halt_agent) && (halt_agent->stopRequested())) {
+            qWarning() << "Halting in http_post: " + url;
+            reply->abort();
+            loop.quit();
+        }
+        loop.processEvents();
+    }
+
+    if ((halt_agent) && (halt_agent->stopRequested())) {
+        QJsonObject obj;
+        obj["success"] = false;
+        obj["error"] = "Halting in http_post: " + url;
+        return obj;
+    } else {
+        printf("RECEIVED TEXT (%d ms, %d bytes) from POST %s\n", timer.elapsed(), ret.count(), url.toLatin1().data());
+        QString str = ret.mid(0, 5000) + "...";
+        str.replace("\\n", "\n");
+        printf("%s\n", (str.toLatin1().data()));
+        QJsonObject obj = QJsonDocument::fromJson(ret.toLatin1()).object();
+
+        TaskProgressAgent::globalInstance()->incrementQuantity("bytes_downloaded", ret.count());
+
+        return obj;
+    }
 }
 
-void MountainsortThread::compute()
+void MountainProcessRunner::runProcess(HaltAgent* halt_agent)
 {
 
     TaskProgress task("MS: " + d->m_processor_name);
@@ -137,6 +158,7 @@ void MountainsortThread::compute()
             }
         }
 
+        /// TODO implement this as spawn? with respect for this->stopRequested
         if (QProcess::execute(mountainsort_exe, args) != 0) {
             qWarning() << "Problem running mountainsort" << mountainsort_exe << args;
             task.error("Problem running mountainsort");
@@ -175,16 +197,27 @@ void MountainsortThread::compute()
         QJsonObject req;
         req["action"] = "queueScript";
         req["script"] = script;
-        QString url = d->m_mlproxy_url+"/mpserver";
+        QString url = d->m_mlproxy_url + "/mpserver";
         task.log("POSTING: " + url);
         task.log(QJsonDocument(req).toJson());
-        QJsonObject resp = http_post(url, req);
+        if ((halt_agent) && (halt_agent->stopRequested())) {
+            task.error("Halted before post.");
+            return;
+        }
+        QTime post_timer;
+        post_timer.start();
+        QJsonObject resp = http_post(url, req, halt_agent);
+        TaskProgressAgent::globalInstance()->incrementQuantity("remote_processing_time", post_timer.elapsed());
+        if ((halt_agent) && (halt_agent->stopRequested())) {
+            task.error("Halted during post: " + url);
+            return;
+        }
         task.log("GOT RESPONSE: ");
         task.log(QJsonDocument(resp).toJson());
     }
 }
 
-QString MountainsortThreadPrivate::create_temporary_output_file_name(const QString& mlproxy_url, const QString& processor_name, const QMap<QString, QVariant>& params, const QString& parameter_name)
+QString MountainProcessRunnerPrivate::create_temporary_output_file_name(const QString& mlproxy_url, const QString& processor_name, const QMap<QString, QVariant>& params, const QString& parameter_name)
 {
     QString str = processor_name + ":";
     QStringList keys = params.keys();

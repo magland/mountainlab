@@ -54,16 +54,13 @@ int main(int argc, char* argv[])
             return -1;
         else
             return 0;
-    }
-    else if (arg1 == "list-processors") {
+    } else if (arg1 == "list-processors") {
         list_processors(PM);
         return 0;
-    }
-    else if (arg1 == "detail-processors") {
+    } else if (arg1 == "detail-processors") {
         PM->printDetails();
         return 0;
-    }
-    else if (arg1 == "spec") {
+    } else if (arg1 == "spec") {
         PM->printJsonSpec();
         return 0;
     }
@@ -79,7 +76,8 @@ int main(int argc, char* argv[])
         process["processor_name"] = processor_name;
         QJsonObject parameters;
         QStringList keys = CLP.named_parameters.keys();
-        foreach (QString key, keys) {
+        foreach(QString key, keys)
+        {
             parameters[key] = CLP.named_parameters[key].toString();
         }
         process["parameters"] = parameters;
@@ -87,8 +85,7 @@ int main(int argc, char* argv[])
             return 0;
         else
             return -1;
-    }
-    else {
+    } else {
         printf("Unexpected number of unnamed parameters: %d\n", CLP.unnamed_parameters.count());
     }
 
@@ -116,7 +113,8 @@ bool run_process(MSProcessManager* PM, QJsonObject process)
     QJsonObject parameters = process["parameters"].toObject();
     QStringList keys = parameters.keys();
     QMap<QString, QVariant> params;
-    foreach (QString key, keys) {
+    foreach(QString key, keys)
+    {
         params[key] = parameters[key].toString();
     }
 
@@ -126,4 +124,3 @@ bool run_process(MSProcessManager* PM, QJsonObject process)
 
     return true;
 }
-

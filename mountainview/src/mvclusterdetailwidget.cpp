@@ -19,7 +19,8 @@
 #include <QTimer>
 #include "compute_templates_0.h"
 #include "computationthread.h"
-#include "mountainsortthread.h"
+#include "mountainprocessrunner.h"
+#include "toolbuttonmenu.h"
 
 struct ClusterData {
     ClusterData()
@@ -31,6 +32,7 @@ struct ClusterData {
     int k;
     int channel;
     Mda template0;
+    Mda stdev0;
     QList<int> inds;
     QList<double> times;
     QList<double> peaks;
@@ -68,6 +70,7 @@ public:
         m_highlighted = false;
         m_hovered = false;
         x_position_before_scaling = 0;
+        m_stdev_shading = false;
     }
     void setClusterData(const ClusterData& CD)
     {
@@ -99,6 +102,15 @@ public:
     {
         m_selected = val;
     }
+    void setStdevShading(bool val)
+    {
+        m_stdev_shading = val;
+    }
+    bool stdevShading()
+    {
+        return m_stdev_shading;
+    }
+
     void paint(QPainter* painter, QRectF rect);
     double spaceNeeded();
     ClusterData* clusterData()
@@ -126,6 +138,7 @@ private:
     bool m_hovered;
     bool m_selected;
     QJsonObject m_attributes;
+    bool m_stdev_shading;
 
     QPointF template_coord2pix(int m, double t, double val);
     QColor get_firing_rate_text_color(double rate);
@@ -161,6 +174,7 @@ public:
     double m_anchor_scroll_x;
     int m_anchor_view_index;
     MVClusterDetailWidgetCalculator m_calculator;
+    bool m_stdev_shading;
 
     MVViewAgent* m_view_agent;
 
@@ -180,6 +194,7 @@ public:
     void do_paint(QPainter& painter, int W, int H);
     void export_image();
     void start_calculation();
+    void toggle_stdev_shading();
 
     static QList<ClusterData> merge_cluster_data(const ClusterMerge& CM, const QList<ClusterData>& CD);
 };
@@ -201,6 +216,7 @@ MVClusterDetailWidget::MVClusterDetailWidget(QWidget* parent)
     d->m_anchor_x = -1;
     d->m_anchor_scroll_x = -1;
     d->m_anchor_view_index = -1;
+    d->m_stdev_shading = false;
 
     d->m_colors["background"] = QColor(240, 240, 240);
     d->m_colors["frame1"] = QColor(245, 245, 245);
@@ -215,15 +231,33 @@ MVClusterDetailWidget::MVClusterDetailWidget(QWidget* parent)
 
     this->setFocusPolicy(Qt::StrongFocus);
     this->setMouseTracking(true);
-    this->setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(this, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slot_context_menu(QPoint)));
+    //this->setContextMenuPolicy(Qt::CustomContextMenu);
+    //connect(this, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slot_context_menu(QPoint)));
 
     connect(&d->m_calculator, SIGNAL(computationFinished()), this, SLOT(slot_calculator_finished()));
+
+    this->setContextMenuPolicy(Qt::ActionsContextMenu);
+    ToolButtonMenu *MM=new ToolButtonMenu(this);
+    MM->setOffset(QSize(4, 4));
+    QToolButton *tb=MM->activateOn(this);
+    tb->setIconSize(QSize(24,24));
+    QIcon icon(":images/gear.png");
+    tb->setIcon(icon);
+    {
+        QAction *a=new QAction("Export image",this);
+        this->addAction(a);
+        connect(a,SIGNAL(triggered(bool)),this,SLOT(slot_export_image()));
+    }
+    {
+        QAction *a=new QAction("Toggle std. dev. shading",this);
+        this->addAction(a);
+        connect(a,SIGNAL(triggered(bool)),this,SLOT(slot_toggle_stdev_shading()));
+    }
 }
 
 MVClusterDetailWidget::~MVClusterDetailWidget()
 {
-    d->m_calculator.stopComputation();
+    d->m_calculator.stopComputation(); // important do take care of this before things start getting destructed!
     qDeleteAll(d->m_views);
     delete d;
 }
@@ -302,11 +336,13 @@ void MVClusterDetailWidget::setCurrentK(int k)
 
 bool sets_are_equal(const QSet<int>& S1, const QSet<int>& S2)
 {
-    foreach (int val, S1) {
+    foreach(int val, S1)
+    {
         if (!S2.contains(val))
             return false;
     }
-    foreach (int val, S2) {
+    foreach(int val, S2)
+    {
         if (!S1.contains(val))
             return false;
     }
@@ -404,25 +440,20 @@ void MVClusterDetailWidget::keyPressEvent(QKeyEvent* evt)
     if (evt->key() == Qt::Key_Up) {
         d->m_vscale_factor *= factor;
         update();
-    }
-    else if (evt->key() == Qt::Key_Down) {
+    } else if (evt->key() == Qt::Key_Down) {
         d->m_vscale_factor /= factor;
         update();
-    }
-    else if ((evt->key() == Qt::Key_Plus) || (evt->key() == Qt::Key_Equal)) {
+    } else if ((evt->key() == Qt::Key_Plus) || (evt->key() == Qt::Key_Equal)) {
         d->zoom(1.1);
-    }
-    else if (evt->key() == Qt::Key_Minus) {
+    } else if (evt->key() == Qt::Key_Minus) {
         d->zoom(1 / 1.1);
-    }
-    else if ((evt->key() == Qt::Key_A) && (evt->modifiers() & Qt::ControlModifier)) {
+    } else if ((evt->key() == Qt::Key_A) && (evt->modifiers() & Qt::ControlModifier)) {
         QList<int> ks;
         for (int i = 0; i < d->m_views.count(); i++) {
             ks << d->m_views[i]->k();
         }
         this->setSelectedKs(ks);
-    }
-    else if (evt->key() == Qt::Key_Left) {
+    } else if (evt->key() == Qt::Key_Left) {
         int view_index = d->get_current_view_index();
         if (view_index > 0) {
             int k = d->m_views[view_index - 1]->k();
@@ -434,8 +465,7 @@ void MVClusterDetailWidget::keyPressEvent(QKeyEvent* evt)
             this->setSelectedKs(ks);
             this->setCurrentK(k);
         }
-    }
-    else if (evt->key() == Qt::Key_Right) {
+    } else if (evt->key() == Qt::Key_Right) {
         int view_index = d->get_current_view_index();
         if ((view_index >= 0) && (view_index + 1 < d->m_views.count())) {
             int k = d->m_views[view_index + 1]->k();
@@ -447,8 +477,7 @@ void MVClusterDetailWidget::keyPressEvent(QKeyEvent* evt)
             this->setSelectedKs(ks);
             this->setCurrentK(k);
         }
-    }
-    else
+    } else
         evt->ignore();
 }
 
@@ -483,8 +512,7 @@ void MVClusterDetailWidget::mouseReleaseEvent(QMouseEvent* evt)
                 d->m_selected_ks.remove(k);
                 emit signalSelectedKsChanged();
                 update();
-            }
-            else {
+            } else {
                 d->m_anchor_view_index = view_index;
                 if (k)
                     d->m_selected_ks.insert(k);
@@ -492,8 +520,7 @@ void MVClusterDetailWidget::mouseReleaseEvent(QMouseEvent* evt)
                 update();
             }
         }
-    }
-    else if (evt->modifiers() & Qt::ShiftModifier) {
+    } else if (evt->modifiers() & Qt::ShiftModifier) {
         int view_index = d->find_view_index_at(pt);
         if (view_index >= 0) {
             if (d->m_anchor_view_index >= 0) {
@@ -510,16 +537,14 @@ void MVClusterDetailWidget::mouseReleaseEvent(QMouseEvent* evt)
                 update();
             }
         }
-    }
-    else {
+    } else {
         d->m_anchor_view_index = -1;
         int view_index = d->find_view_index_at(pt);
         if (view_index >= 0) {
             d->m_anchor_view_index = view_index;
             int k = d->m_views[view_index]->k();
             if (d->m_current_k == k) {
-            }
-            else {
+            } else {
                 d->set_current_k(k);
                 d->m_selected_ks.clear();
                 if (k)
@@ -527,8 +552,7 @@ void MVClusterDetailWidget::mouseReleaseEvent(QMouseEvent* evt)
                 emit signalSelectedKsChanged();
                 update();
             }
-        }
-        else {
+        } else {
             d->set_current_k(-1);
             d->m_selected_ks.clear();
             emit signalSelectedKsChanged();
@@ -549,8 +573,7 @@ void MVClusterDetailWidget::mouseMoveEvent(QMouseEvent* evt)
     int view_index = d->find_view_index_at(pt);
     if (view_index >= 0) {
         d->set_hovered_k(d->m_views[view_index]->k());
-    }
-    else {
+    } else {
         d->set_hovered_k(-1);
     }
 }
@@ -572,21 +595,36 @@ void MVClusterDetailWidget::wheelEvent(QWheelEvent* evt)
     d->zoom(factor);
 }
 
+/*
 void MVClusterDetailWidget::slot_context_menu(const QPoint& pos)
 {
     QMenu M;
     QAction* export_image = M.addAction("Export Image");
+    QAction* toggle_stdev_shading = M.addAction("Toggle std. dev. shading");
     QAction* selected = M.exec(this->mapToGlobal(pos));
     if (selected == export_image) {
         d->export_image();
+    } else if (selected == toggle_stdev_shading) {
+        d->toggle_stdev_shading();
     }
 }
+*/
 
 void MVClusterDetailWidget::slot_calculator_finished()
 {
     d->m_calculator.stopComputation(); //because I'm paranoid!
     d->m_cluster_data = d->m_calculator.cluster_data;
     this->update();
+}
+
+void MVClusterDetailWidget::slot_export_image()
+{
+    d->export_image();
+}
+
+void MVClusterDetailWidget::slot_toggle_stdev_shading()
+{
+    d->toggle_stdev_shading();
 }
 
 void MVClusterDetailWidgetPrivate::compute_total_time()
@@ -650,8 +688,7 @@ void MVClusterDetailWidgetPrivate::ensure_view_visible(ClusterView* V)
         m_scroll_x = x0 - 100;
         if (m_scroll_x < 0)
             m_scroll_x = 0;
-    }
-    else if (x0 > m_scroll_x + q->width()) {
+    } else if (x0 > m_scroll_x + q->width()) {
         m_scroll_x = x0 - q->width() + 100;
     }
 }
@@ -665,8 +702,7 @@ void MVClusterDetailWidgetPrivate::zoom(double factor)
         m_scroll_x = view->x_position_before_scaling * m_space_ratio - current_screen_x;
         if (m_scroll_x < 0)
             m_scroll_x = 0;
-    }
-    else {
+    } else {
         m_space_ratio *= factor;
     }
     q->update();
@@ -743,6 +779,7 @@ void ClusterView::paint(QPainter* painter, QRectF rect)
     painter->drawRect(rect2);
 
     Mda template0 = m_CD.template0;
+    Mda stdev0 = m_CD.stdev0;
     int M = template0.N1();
     int T = template0.N2();
     int Tmid = (int)((T + 1) / 2) - 1;
@@ -771,15 +808,37 @@ void ClusterView::paint(QPainter* painter, QRectF rect)
         pen.setWidth(1);
         pen.setColor(col);
         painter->setPen(pen);
-        QPainterPath path;
-        for (int t = 0; t < T; t++) {
-            QPointF pt = template_coord2pix(m, t, template0.value(m, t));
-            if (t == 0)
-                path.moveTo(pt);
-            else
+        if (d->m_stdev_shading) {
+            QColor quite_light_gray(200, 200, 205);
+            QPainterPath path;
+            for (int t = 0; t < T; t++) {
+                QPointF pt = template_coord2pix(m, t, template0.value(m, t) - stdev0.value(m, t));
+                if (t == 0)
+                    path.moveTo(pt);
+                else
+                    path.lineTo(pt);
+            }
+            for (int t = T - 1; t >= 0; t--) {
+                QPointF pt = template_coord2pix(m, t, template0.value(m, t) + stdev0.value(m, t));
                 path.lineTo(pt);
+            }
+            for (int t = 0; t <= 0; t++) {
+                QPointF pt = template_coord2pix(m, t, template0.value(m, t) - stdev0.value(m, t));
+                path.lineTo(pt);
+            }
+            painter->fillPath(path, QBrush(quite_light_gray));
         }
-        painter->drawPath(path);
+        { // the template
+            QPainterPath path;
+            for (int t = 0; t < T; t++) {
+                QPointF pt = template_coord2pix(m, t, template0.value(m, t));
+                if (t == 0)
+                    path.moveTo(pt);
+                else
+                    path.lineTo(pt);
+            }
+            painter->drawPath(path);
+        }
     }
 
     QFont font = painter->font();
@@ -863,6 +922,9 @@ void MVClusterDetailWidgetPrivate::do_paint(QPainter& painter, int W, int H)
 {
     painter.fillRect(0, 0, W, H, m_colors["background"]);
 
+    int right_margin=10; //make some room for the icon
+    W=W-right_margin;
+
     if (m_calculator.isComputing()) {
         QFont font = painter.font();
         font.setPointSize(30);
@@ -876,8 +938,7 @@ void MVClusterDetailWidgetPrivate::do_paint(QPainter& painter, int W, int H)
     if (m_view_agent) {
         cluster_data_merged = merge_cluster_data(m_view_agent->clusterMerge(), m_cluster_data);
         cluster_attributes = m_view_agent->clusterAttributes();
-    }
-    else {
+    } else {
         cluster_data_merged = m_cluster_data;
     }
 
@@ -886,6 +947,7 @@ void MVClusterDetailWidgetPrivate::do_paint(QPainter& painter, int W, int H)
     for (int i = 0; i < cluster_data_merged.count(); i++) {
         ClusterData CD = cluster_data_merged[i];
         ClusterView* V = new ClusterView(q, this);
+        V->setStdevShading(m_stdev_shading);
         V->setHighlighted(CD.k == m_current_k);
         V->setSelected(m_selected_ks.contains(CD.k));
         V->setHovered(CD.k == m_hovered_k);
@@ -930,6 +992,12 @@ void MVClusterDetailWidgetPrivate::export_image()
     user_save_image(img);
 }
 
+void MVClusterDetailWidgetPrivate::toggle_stdev_shading()
+{
+    m_stdev_shading = !m_stdev_shading;
+    q->update();
+}
+
 void MVClusterDetailWidgetPrivate::start_calculation()
 {
     m_calculator.stopComputation();
@@ -947,8 +1015,11 @@ ClusterData combine_cluster_data_group(const QList<ClusterData>& group, ClusterD
     ClusterData ret;
     ret.k = main_CD.k;
     ret.channel = main_CD.channel;
+    Mda sum0;
+    Mda sumsqr0;
     if (group.count() > 0) {
-        ret.template0.allocate(group[0].template0.N1(), group[0].template0.N2(), group[0].template0.N3());
+        sum0.allocate(group[0].template0.N1(), group[0].template0.N2(), group[0].template0.N3());
+        sumsqr0.allocate(group[0].template0.N1(), group[0].template0.N2(), group[0].template0.N3());
     }
     double total_weight = 0;
     for (int i = 0; i < group.count(); i++) {
@@ -956,18 +1027,26 @@ ClusterData combine_cluster_data_group(const QList<ClusterData>& group, ClusterD
         ret.peaks << group[i].peaks;
         ret.times << group[i].times;
         double weight = ret.inds.count();
-        for (int i3 = 0; i3 < ret.template0.N3(); i3++) {
-            for (int i2 = 0; i2 < ret.template0.N2(); i2++) {
-                for (int i1 = 0; i1 < ret.template0.N1(); i1++) {
-                    ret.template0.setValue(ret.template0.value(i1, i2, i3) + weight * group[i].template0.value(i1, i2, i3), i1, i2, i3);
+        for (int i3 = 0; i3 < sum0.N3(); i3++) {
+            for (int i2 = 0; i2 < sum0.N2(); i2++) {
+                for (int i1 = 0; i1 < sum0.N1(); i1++) {
+                    double val1 = group[i].template0.value(i1, i2, i3) * weight;
+                    double val2 = group[i].stdev0.value(i1, i2, i3) * group[i].stdev0.value(i1, i2, i3) * weight;
+                    sum0.setValue(sum0.value(i1, i2, i3) + val1, i1, i2, i3);
+                    sumsqr0.setValue(sumsqr0.value(i1, i2, i3) + (val2 + val1 * val1 / weight), i1, i2, i3);
                 }
             }
         }
         total_weight += weight;
     }
+    ret.template0.allocate(sum0.N1(), sum0.N2(), sum0.N3());
+    ret.stdev0.allocate(sum0.N1(), sum0.N2(), sum0.N3());
     if (total_weight) {
         for (long i = 0; i < ret.template0.totalSize(); i++) {
-            ret.template0.set(ret.template0.get(i) / total_weight, i);
+            double val_sum = sum0.get(i);
+            double val_sumsqr = sumsqr0.get(i);
+            ret.template0.set(val_sum / total_weight, i);
+            ret.stdev0.set(sqrt((val_sumsqr - val_sum * val_sum / total_weight) / total_weight), i);
         }
     }
     return ret;
@@ -985,8 +1064,7 @@ QList<ClusterData> MVClusterDetailWidgetPrivate::merge_cluster_data(const Cluste
                 }
             }
             ret << combine_cluster_data_group(group, CD[i]);
-        }
-        else {
+        } else {
             ClusterData CD0;
             CD0.k = CD[i].k;
             CD0.channel = CD[i].channel;
@@ -1025,33 +1103,11 @@ QColor ClusterView::get_cluster_assessment_text_color(QString aa)
     return Qt::black;
 }
 
-/*
-DiskReadMda mscmd_compute_templates(const QString& mscmdserver_url, const QString& timeseries, const QString& firings, int clip_size)
-{
-    MountainsortThread X;
-    QString processor_name = "compute_templates";
-    X.setProcessorName(processor_name);
-
-    QMap<QString, QVariant> params;
-    params["timeseries"] = timeseries;
-    params["firings"] = firings;
-    params["clip_size"] = clip_size;
-    X.setInputParameters(params);
-    X.setMscmdServerUrl(mscmdserver_url);
-
-    QString templates_fname = X.makeOutputFilePath("templates");
-
-    X.compute();
-    DiskReadMda ret(templates_fname);
-    return ret;
-}
-*/
-
-DiskReadMda mp_compute_templates(const QString& mlproxy_url, const QString& timeseries, const QString& firings, int clip_size)
+DiskReadMda mp_compute_templates(const QString& mlproxy_url, const QString& timeseries, const QString& firings, int clip_size, HaltAgent* halt_agent)
 {
     TaskProgress task("mp_compute_templates");
     task.log("mlproxy_url: " + mlproxy_url);
-    MountainsortThread X;
+    MountainProcessRunner X;
     QString processor_name = "compute_templates";
     X.setProcessorName(processor_name);
 
@@ -1065,10 +1121,35 @@ DiskReadMda mp_compute_templates(const QString& mlproxy_url, const QString& time
     QString templates_fname = X.makeOutputFilePath("templates");
 
     task.log("X.compute()");
-    X.compute();
+    X.runProcess(halt_agent);
     task.log("Returning DiskReadMda: " + templates_fname);
     DiskReadMda ret(templates_fname);
     return ret;
+}
+
+void mp_compute_templates_stdevs(DiskReadMda& templates_out, DiskReadMda& stdevs_out, const QString& mlproxy_url, const QString& timeseries, const QString& firings, int clip_size, HaltAgent* halt_agent)
+{
+    TaskProgress task("mp_compute_templates_stdevs");
+    task.log("mlproxy_url: " + mlproxy_url);
+    MountainProcessRunner X;
+    QString processor_name = "mv_compute_templates";
+    X.setProcessorName(processor_name);
+
+    QMap<QString, QVariant> params;
+    params["timeseries"] = timeseries;
+    params["firings"] = firings;
+    params["clip_size"] = clip_size;
+    X.setInputParameters(params);
+    X.setMLProxyUrl(mlproxy_url);
+
+    QString templates_fname = X.makeOutputFilePath("templates");
+    QString stdevs_fname = X.makeOutputFilePath("stdevs");
+
+    task.log("X.compute()");
+    X.runProcess(halt_agent);
+    task.log("Returning DiskReadMda: " + templates_fname + " " + stdevs_fname);
+    templates_out.setPath(templates_fname);
+    stdevs_out.setPath(stdevs_fname);
 }
 
 void MVClusterDetailWidgetCalculator::compute()
@@ -1098,8 +1179,8 @@ void MVClusterDetailWidgetCalculator::compute()
     }
 
     if (this->stopRequested()) {
-        task.log("Cluster details - stop requested");
-        return; ////////////////////////////
+        task.error("Halted *");
+        return;
     }
     task.log("Clearing data");
     cluster_data.clear();
@@ -1118,16 +1199,22 @@ void MVClusterDetailWidgetCalculator::compute()
     DiskReadMda templates0 = mscmd_compute_templates(mscmdserver_url, timeseries_path, firings_path, T);
     */
 
-    task.log("mp_compute_templates: " + mlproxy_url + " timeseries_path=" + timeseries_path + " firings_path=" + firings_path);
+    task.log("mp_compute_templates_stdevs: " + mlproxy_url + " timeseries_path=" + timeseries_path + " firings_path=" + firings_path);
     task.setProgress(0.6);
-    DiskReadMda templates0 = mp_compute_templates(mlproxy_url, timeseries_path, firings_path, T);
+    //DiskReadMda templates0 = mp_compute_templates(mlproxy_url, timeseries_path, firings_path, T, this);
+    DiskReadMda templates0, stdevs0;
+    mp_compute_templates_stdevs(templates0, stdevs0, mlproxy_url, timeseries_path, firings_path, T, this);
+    if (this->stopRequested()) {
+        task.error("Halted **");
+        return;
+    }
 
     task.setLabel("Setting cluster data");
     task.setProgress(0.75);
     for (int k = 1; k <= K; k++) {
         if (this->stopRequested()) {
-            task.setLabel("Setting cluster data - stop requested");
-            return; ////////////////////////////
+            task.error("Halted ***");
+            return;
         }
         ClusterData CD;
         CD.k = k;
@@ -1141,10 +1228,11 @@ void MVClusterDetailWidgetCalculator::compute()
             }
         }
         if (this->stopRequested()) {
-            task.setLabel("Setting cluster data - stop requested");
-            return; ////////////////////////////
+            task.error("Halted ****");
+            return;
         }
         templates0.readChunk(CD.template0, 0, 0, k - 1, M, T, 1);
+        stdevs0.readChunk(CD.stdev0, 0, 0, k - 1, M, T, 1);
         cluster_data << CD;
     }
 }

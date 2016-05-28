@@ -59,7 +59,8 @@ signals:
     ///The current rotation (affine transformation) has changed - useful for synchronizing multiple cluster views
     void transformationChanged();
 
-private slots:
+private
+slots:
     void slot_context_menu(const QPoint& pos);
 
 protected:

@@ -34,7 +34,7 @@ MBController::~MBController()
 {
     foreach(QProcess * P, d->m_processes)
     {
-        P->terminate();
+        P->terminate(); //I think it's okay to terminate a process. It won't cause this program to crash.
         delete P;
     }
 
@@ -93,6 +93,7 @@ void MBController::openSortingResult(QString json)
         QProcess* process = new QProcess;
         process->setProcessChannelMode(QProcess::MergedChannels);
         connect(process, SIGNAL(readyRead()), this, SLOT(slot_ready_read()));
+        qDebug() << "EXECUTING" << mv_exe + " " + args.join(" ");
         process->start(mv_exe, args);
         d->m_processes << process;
     }

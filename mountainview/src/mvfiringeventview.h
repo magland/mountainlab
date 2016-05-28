@@ -3,24 +3,24 @@
 ** Author(s): Jeremy Magland
 *******************************************************/
 
-#ifndef MVFIRINGRATEVIEW_H
-#define MVFIRINGRATEVIEW_H
+#ifndef MVFIRINGEVENTVIEW_H
+#define MVFIRINGEVENTVIEW_H
 
 #include <QWidget>
 #include "diskreadmda.h"
 #include "mvutils.h"
 
-/** \class MVFiringRateView
+/** \class MVFiringEventView
  *  \brief Shows the firing rates (in color) of a selected neuron (or cluster) as a function of time. And shows distribution of amplitudes as well.
  */
 
-class MVFiringRateViewPrivate;
-class MVFiringRateView : public QWidget {
+class MVFiringEventViewPrivate;
+class MVFiringEventView : public QWidget {
     Q_OBJECT
 public:
-    friend class MVFiringRateViewPrivate;
-    MVFiringRateView();
-    virtual ~MVFiringRateView();
+    friend class MVFiringEventViewPrivate;
+    MVFiringEventView();
+    virtual ~MVFiringEventView();
     ///Set the RxL array of firing event info
     void setFirings(const Mda& firings);
     ///The sampling rate, (not sure if used right now)
@@ -41,7 +41,7 @@ private slots:
     void slot_context_menu(const QPoint& pos);
 
 private:
-    MVFiringRateViewPrivate* d;
+    MVFiringEventViewPrivate* d;
 };
 
-#endif // MVFIRINGRATEVIEW_H
+#endif // MVFiringEventView_H

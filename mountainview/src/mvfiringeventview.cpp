@@ -1,4 +1,4 @@
-#include "mvfiringrateview.h"
+#include "mvfiringeventview.h"
 
 #include <QPainter>
 #include <QDebug>
@@ -11,9 +11,9 @@
 #include "mvutils.h"
 #include "msmisc.h"
 
-class MVFiringRateViewPrivate {
+class MVFiringEventViewPrivate {
 public:
-    MVFiringRateView* q;
+    MVFiringEventView* q;
 
     //set by user
     QList<double> m_times;
@@ -45,9 +45,9 @@ public:
     void do_paint(QPainter& painter, int W, int H);
 };
 
-MVFiringRateView::MVFiringRateView()
+MVFiringEventView::MVFiringEventView()
 {
-    d = new MVFiringRateViewPrivate;
+    d = new MVFiringEventViewPrivate;
     d->q = this;
     d->m_samplerate = 30000; //Hz
     d->m_max_timepoint = 0;
@@ -63,12 +63,12 @@ MVFiringRateView::MVFiringRateView()
     connect(this, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slot_context_menu(QPoint)));
 }
 
-MVFiringRateView::~MVFiringRateView()
+MVFiringEventView::~MVFiringEventView()
 {
     delete d;
 }
 
-void MVFiringRateView::setFirings(const Mda& firings)
+void MVFiringEventView::setFirings(const Mda& firings)
 {
     d->m_times.clear();
     d->m_labels.clear();
@@ -86,25 +86,25 @@ void MVFiringRateView::setFirings(const Mda& firings)
     d->schedule_update();
 }
 
-void MVFiringRateView::setSampleRate(double ff)
+void MVFiringEventView::setSampleRate(double ff)
 {
     d->m_samplerate = ff;
     d->schedule_update();
 }
 
-void MVFiringRateView::setCurrentEvent(MVEvent evt)
+void MVFiringEventView::setCurrentEvent(MVEvent evt)
 {
     Q_UNUSED(evt)
     //finish this!
 }
 
-void MVFiringRateView::setEpochs(const QList<Epoch>& epochs)
+void MVFiringEventView::setEpochs(const QList<Epoch>& epochs)
 {
     d->m_epochs = epochs;
     update();
 }
 
-QImage MVFiringRateView::renderImage(int W, int H)
+QImage MVFiringEventView::renderImage(int W, int H)
 {
     QImage ret = QImage(W, H, QImage::Format_RGB32);
     QPainter painter(&ret);
@@ -167,7 +167,7 @@ void smooth_grid(Mda& X, double kernel_tau)
     }
 }
 
-void MVFiringRateView::slot_update()
+void MVFiringEventView::slot_update()
 {
     d->m_update_scheduled = false;
 
@@ -238,7 +238,7 @@ void MVFiringRateView::slot_update()
     d->m_view->setData(DAM,this);*/
 }
 
-void MVFiringRateView::slot_context_menu(const QPoint& pos)
+void MVFiringEventView::slot_context_menu(const QPoint& pos)
 {
     QMenu M;
     QAction* export_image = M.addAction("Export Image");
@@ -248,7 +248,7 @@ void MVFiringRateView::slot_context_menu(const QPoint& pos)
     }
 }
 
-void MVFiringRateView::paintEvent(QPaintEvent* evt)
+void MVFiringEventView::paintEvent(QPaintEvent* evt)
 {
     Q_UNUSED(evt);
 
@@ -256,13 +256,13 @@ void MVFiringRateView::paintEvent(QPaintEvent* evt)
     d->do_paint(painter, width(), height());
 }
 
-void MVFiringRateView::mouseReleaseEvent(QMouseEvent* evt)
+void MVFiringEventView::mouseReleaseEvent(QMouseEvent* evt)
 {
     QPointF pt = evt->pos();
     int index = d->find_closest_event_index(pt);
 }
 
-QPointF MVFiringRateViewPrivate::coord2imagepix(const QPointF& p, int W, int H)
+QPointF MVFiringEventViewPrivate::coord2imagepix(const QPointF& p, int W, int H)
 {
     if ((m_max_timepoint == 0) || (m_max_amplitude == m_min_amplitude))
         return QPointF(0, 0);
@@ -275,20 +275,20 @@ QPointF MVFiringRateViewPrivate::coord2imagepix(const QPointF& p, int W, int H)
     return QPointF(x0, y0);
 }
 
-QPointF MVFiringRateViewPrivate::windowpix2coord(const QPointF& p)
+QPointF MVFiringEventViewPrivate::windowpix2coord(const QPointF& p)
 {
     QPointF q = p - m_target_rect.topLeft();
     return imagepix2coord(q, m_target_rect.width(), m_target_rect.height());
 }
 
-QPointF MVFiringRateViewPrivate::imagepix2coord(const QPointF& p, int W, int H)
+QPointF MVFiringEventViewPrivate::imagepix2coord(const QPointF& p, int W, int H)
 {
     double pctx = p.x() / W;
     double pcty = 1 - p.y() / H;
     return QPointF(pctx * m_max_timepoint, pcty * (m_max_amplitude - m_min_amplitude) + m_min_amplitude);
 }
 
-void MVFiringRateViewPrivate::schedule_update()
+void MVFiringEventViewPrivate::schedule_update()
 {
     if (m_update_scheduled)
         return;
@@ -296,14 +296,14 @@ void MVFiringRateViewPrivate::schedule_update()
     QTimer::singleShot(500, q, SLOT(slot_update()));
 }
 
-int MVFiringRateViewPrivate::find_closest_event_index(const QPointF& pt)
+int MVFiringEventViewPrivate::find_closest_event_index(const QPointF& pt)
 {
     QPointF coord = windowpix2coord(pt);
     QPointF qq = coord2imagepix(coord, m_event_index_grid.N1(), m_event_index_grid.N2());
     return find_closest_event_index((int)(qq.x()), (int)(qq.y()));
 }
 
-int MVFiringRateViewPrivate::find_closest_event_index(int i1, int i2)
+int MVFiringEventViewPrivate::find_closest_event_index(int i1, int i2)
 {
     int best_ind = -1;
     int best_x = -1, best_y = -1;
@@ -325,7 +325,7 @@ int MVFiringRateViewPrivate::find_closest_event_index(int i1, int i2)
     return best_ind;
 }
 
-void MVFiringRateViewPrivate::set_current_event_index(int ind)
+void MVFiringEventViewPrivate::set_current_event_index(int ind)
 {
     if (ind == m_current_event_index)
         return;
@@ -334,13 +334,13 @@ void MVFiringRateViewPrivate::set_current_event_index(int ind)
     q->update();
 }
 
-void MVFiringRateViewPrivate::export_image()
+void MVFiringEventViewPrivate::export_image()
 {
     QImage img = q->renderImage(1800, 900);
     user_save_image(img);
 }
 
-void MVFiringRateViewPrivate::do_paint(QPainter& painter, int W, int H)
+void MVFiringEventViewPrivate::do_paint(QPainter& painter, int W, int H)
 {
     painter.fillRect(0, 0, W, H, QColor(160, 160, 160));
 

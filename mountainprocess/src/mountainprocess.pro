@@ -43,8 +43,8 @@ SOURCES += commandlineparams.cpp
 
 INCLUDEPATH += ../../common/utils
 VPATH += ../../common/utils
-HEADERS += textfile.h
-SOURCES += textfile.cpp
+HEADERS += textfile.h haltagent.h taskprogress.h
+SOURCES += textfile.cpp haltagent.cpp taskprogress.cpp
 
 HEADERS += \
     processmanager.h \

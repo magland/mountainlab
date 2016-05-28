@@ -41,8 +41,7 @@ int main(int argc, char* argv[])
         DiskReadMda X(arg1);
         printf("%ld,%ld,%ld,%ld,%ld,%ld\n", X.N1(), X.N2(), X.N3(), X.N4(), X.N5(), X.N6());
         return 0;
-    }
-    else if (arg0 == "info") {
+    } else if (arg0 == "info") {
         if (arg1.isEmpty()) {
             printf("Problem with second argument\n");
             return -1;
@@ -57,8 +56,7 @@ int main(int argc, char* argv[])
         printf("%s\n", sha1_code.toLatin1().data());
         printf("%ld\n", (long)QFileInfo(arg1).lastModified().toMSecsSinceEpoch());
         return 0;
-    }
-    else if (arg0 == "readChunk") {
+    } else if (arg0 == "readChunk") {
         if (arg1.isEmpty()) {
             printf("Problem with second argument\n");
             return -1;
@@ -101,14 +99,12 @@ int main(int argc, char* argv[])
                     printf("Error writing file: %s.tmp\n", fname.toLatin1().data());
                     return -1;
                 }
-            }
-            else if (datatype == "float64") {
+            } else if (datatype == "float64") {
                 if (!chunk.write64(fname + ".tmp")) {
                     printf("Error writing file: %s.tmp\n", fname.toLatin1().data());
                     return -1;
                 }
-            }
-            else {
+            } else {
                 printf("Unsupported data type: %s\n", datatype.toLatin1().data());
                 return -1;
             }
@@ -122,8 +118,7 @@ int main(int argc, char* argv[])
                 printf("Error renaming file to %s\n", fname.toLatin1().data());
                 return -1;
             }
-        }
-        else {
+        } else {
             DiskReadMda check(fname);
             if (check.totalSize() != size) {
                 printf("Unexpected dimensions of existing output file: %ld<>%ld\n", check.totalSize(), size);
@@ -135,8 +130,7 @@ int main(int argc, char* argv[])
         printf("%s\n", relative_fname.toLatin1().data());
         //printf("%s.mda\n", code.toLatin1().data());
         return 0;
-    }
-    else {
+    } else {
         printf("unexpected command\n");
         return -1;
     }

@@ -20,8 +20,6 @@
 #include <QFileDialog>
 #include <QObjectList>
 #include <QTextBrowser>
-#include "cvcombowidget.h"
-#include "cvcommon.h"
 #include "mlutils.h"
 
 void do_wait(int ms) {
@@ -514,7 +512,9 @@ void SSTimeSeriesWidget::slot_center_on_cursor()
 
 void SSTimeSeriesWidget::slot_view_clusters()
 {
+    qWarning() << "slot_view_clusters(); Once again I've removed functionality! -jfm";
 
+    /*
     if (!d->m_current_view) return;
     CVComboWidget *W=new CVComboWidget();
     W->setAttribute(Qt::WA_DeleteOnClose);
@@ -540,6 +540,7 @@ void SSTimeSeriesWidget::slot_view_clusters()
     W->resize(500,500);
     W->setWindowTitle(this->windowTitle());
 	d->connect_view(W->timeSeriesView(),true);
+    */
 }
 
 void SSTimeSeriesWidget::slot_navigation_instructions()

@@ -17,14 +17,15 @@ public:
     explicit SSTimeSeriesWidget(QWidget* parent = 0);
     ~SSTimeSeriesWidget();
 
-    Q_INVOKABLE void addView(SSAbstractView* V);
+    void addView(SSAbstractView* V);
     void setClipData(const Mda& X);
     SSAbstractView* view(int index = 0);
 
 private:
     SSTimeSeriesWidgetPrivate* d;
 
-private slots:
+private
+slots:
     void slot_current_x_changed();
     void slot_current_channel_changed();
     void slot_x_range_changed();
@@ -38,7 +39,8 @@ private slots:
 
 signals:
 
-public slots:
+public
+slots:
 };
 
 #endif // SSTIMESERIESWIDGET_H
