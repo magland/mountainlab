@@ -19,7 +19,8 @@ public:
 public slots:
     void copySelectedToClipboard();
     void showLogMessages(const QModelIndex& index);
-
+protected:
+    void updateGeometries();
 private:
     TaskProgressViewPrivate* d;
 };

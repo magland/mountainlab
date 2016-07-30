@@ -47,7 +47,7 @@ public:
 
     void addTask(int id, TaskInfo info)
     {
-        int from = m_activeCount;
+        int from = 0;
         beginInsertRows(QModelIndex(), from, from);
         info.start_time = QDateTime::currentDateTime();
         TaskProgressAgentPrivate* nInfo = new TaskProgressAgentPrivate(id, info);
@@ -66,9 +66,13 @@ public:
         switch (role) {
         case TaskProgressModel::ProgressRole:
             info->m_info.progress = value.toDouble();
-        }
-        info->emitChanged();
+            if (info->m_info.progress >= 1) {
+                completeTask(task);
+            } else {
+                info->emitChanged();
         emit dataChanged(index(row, 0), index(row, columnCount() - 1));
+            }
+        }
     }
 
     void setLabel(const QModelIndex& idx, const QString& label)
@@ -147,13 +151,16 @@ public:
         int newRow = rowCount();
         task->m_info.progress = 1.0;
         task->m_info.end_time = QDateTime::currentDateTime();
+        task->emitChanged();
         if (row == newRow - 1)
+        {
+            emit dataChanged(this->index(row, 0), this->index(row, columnCount() - 1));
             return;
+        }
         beginMoveRows(QModelIndex(), row, row, QModelIndex(), newRow);
         m_data.move(row, newRow - 1);
         m_activeCount--;
         endMoveRows();
-        task->emitChanged();
     }
 
     TaskProgressAgentPrivate* info(const QModelIndex& index) const

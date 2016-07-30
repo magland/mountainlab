@@ -25,6 +25,9 @@
 #include <QAction>
 #include <QMenu>
 #include <QSortFilterProxyModel>
+#include <QScrollBar>
+#include <QToolBar>
+#include <QToolButton>
 
 class TaskProgressViewDelegate : public QStyledItemDelegate {
 public:
@@ -134,9 +137,19 @@ public:
         LM_Hidden
     };
 
-    TaskProgressViewModeProxy(QObject* parent = 0)
-        : QSortFilterProxyModel(parent)
+    TaskProgressViewModeProxy(QObject *parent = 0) 
+        : QSortFilterProxyModel(parent) 
     {
+        m_showLogs = new QAction(this);
+        m_showLogs->setText("Display logs");
+        m_showLogs->setCheckable(true);
+        m_showLogs->setChecked(true);
+        m_showLogs->setIcon(QIcon::fromTheme("view-history"));
+        connect(m_showLogs, &QAction::toggled, [this](bool t) {
+            setLogsMode(t ? LM_Shown : LM_Hidden);
+        });
+
+//        connect(m_showLogs, SIGNAL(toggled(bool)), this, SLOT(updateLogsMode(bool)));
     }
 
     void setCompleteTasksMode(CompleteTasksMode m)
@@ -167,6 +180,11 @@ public:
     LogsMode logsMode() const { return m_lMode; }
     CompleteTasksMode completeTasksMode() const { return m_cMode; }
     unsigned int completeTasksModeThreshold() const { return m_ctmThreshold; }
+
+    QAction* showLogsAction() const
+    {
+        return m_showLogs;
+    }
 
 protected:
     bool filterAcceptsRow(int source_row, const QModelIndex& source_parent) const
@@ -203,12 +221,14 @@ private:
     CompleteTasksMode m_cMode = CTM_Shown;
     LogsMode m_lMode = LM_Shown;
     unsigned int m_ctmThreshold = 10; // 10 seconds
+    QAction *m_showLogs;
 };
 
 class TaskProgressViewPrivate {
 public:
     TaskProgressView* q;
     TaskProgressViewModeProxy* proxyModel;
+    QToolBar *toolbar;
 
     QString shortened(QString txt, int maxlen);
 };
@@ -217,6 +237,7 @@ TaskProgressView::TaskProgressView()
 {
     d = new TaskProgressViewPrivate;
     d->q = this;
+    d->toolbar = new QToolBar(this);
     setSelectionMode(ContiguousSelection);
     setItemDelegate(new TaskProgressViewDelegate(this));
     TaskManager::TaskProgressModel* model = TaskManager::TaskProgressMonitor::globalInstance()->model();
@@ -230,19 +251,19 @@ TaskProgressView::TaskProgressView()
     connect(this, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(showLogMessages(QModelIndex)));
     QShortcut* copyToClipboard = new QShortcut(QKeySequence(QKeySequence::Copy), this);
     connect(copyToClipboard, SIGNAL(activated()), this, SLOT(copySelectedToClipboard()));
-    connect(model, &QAbstractItemModel::modelReset, [this, model]() {
-        for(int i = 0; i < model->rowCount(); ++i)
+    connect(d->proxyModel, &QAbstractItemModel::modelReset, [this]() {
+        for(int i = 0; i < this->model()->rowCount(); ++i)
             this->setFirstColumnSpanned(i, QModelIndex(), true);
     });
 
-    connect(model, &QAbstractItemModel::rowsInserted, [this, model](const QModelIndex& parent, int from, int to) {
+    connect(d->proxyModel, &QAbstractItemModel::rowsInserted, [this](const QModelIndex& parent, int from, int to) {
         if (parent.isValid()) return;
         for(int i = from; i <=to; ++i)
             this->setFirstColumnSpanned(i, QModelIndex(), true);
     });
-    for (int i = 0; i < model->rowCount(); ++i)
+    for (int i = 0; i < this->model()->rowCount(); ++i)
         setFirstColumnSpanned(i, QModelIndex(), true);
-    connect(model, &QAbstractItemModel::dataChanged, [this, model](const QModelIndex& from, const QModelIndex& to) {
+    connect(this->model(), &QAbstractItemModel::dataChanged, [this](const QModelIndex& from, const QModelIndex& to) {
         if (from.parent().isValid()) return;
         for (int i = from.row(); i<=to.row(); ++i) {
             setFirstColumnSpanned(i, QModelIndex(), true);
@@ -257,15 +278,27 @@ TaskProgressView::TaskProgressView()
     QMenu* modeMenu = new QMenu(this);
     modeMenu->setTitle("Mode");
     addAction(modeMenu->menuAction());
-    QAction* defMode = new QAction("Default", this);
+    QAction* defMode = new QAction("All tasks", this);
     defMode->setCheckable(true);
     modeMenu->addAction(defMode);
-    QAction* activeMode = new QAction("Active only", this);
+    QAction* activeMode = new QAction("Active tasks", this);
     activeMode->setCheckable(true);
     modeMenu->addAction(activeMode);
+//    QAction *lastMinute = new QAction("Active and finished within one minute", this);
+//    lastMinute->setCheckable(true);
+//    modeMenu->addAction(lastMinute);
     QActionGroup* grp = new QActionGroup(this);
     grp->addAction(defMode);
     grp->addAction(activeMode);
+//    grp->addAction(lastMinute);
+
+    d->toolbar->addAction(modeMenu->menuAction());
+    QToolButton *modeButton = qobject_cast<QToolButton*>(d->toolbar->widgetForAction(modeMenu->menuAction()));
+    if (modeButton) {
+        modeButton->setIcon(QIcon::fromTheme("document-preview"));
+//    modeButton->setToolTip(modeMenu->title());
+        modeButton->setPopupMode(QToolButton::InstantPopup);
+    }
     connect(defMode, &QAction::toggled, [this](bool checked) {
        if (checked) {
            d->proxyModel->setCompleteTasksMode(TaskProgressViewModeProxy::CTM_Shown);
@@ -276,7 +309,14 @@ TaskProgressView::TaskProgressView()
            d->proxyModel->setCompleteTasksMode(TaskProgressViewModeProxy::CTM_Hidden);
        }
     });
+//    connect(lastMinute, &QAction::toggled, [this](bool checked) {
+//       if (checked) {
+//           d->proxyModel->setCompleteTasksModeThreshold(60);
+//           d->proxyModel->setCompleteTasksMode(TaskProgressViewModeProxy::CTM_HiddenIfOlderThan);
+//       }
+//    });
     defMode->setChecked(true);
+    d->toolbar->addAction(d->proxyModel->showLogsAction());
 }
 
 TaskProgressView::~TaskProgressView()
@@ -344,6 +384,17 @@ void TaskProgressView::showLogMessages(const QModelIndex& index)
     r.setHeight(r.height() / 2);
     dlg->resize(r.size());
     dlg->show();
+}
+
+void TaskProgressView::updateGeometries()
+{
+    QSize tbSize = d->toolbar->sizeHint();
+    d->toolbar->setGeometry(0, 0, width(), tbSize.height());
+    setViewportMargins(0, tbSize.height(), 0, 0);
+    QTreeView::updateGeometries();
+    QRect scrollbarRect = verticalScrollBar()->geometry();
+    scrollbarRect.setTop(tbSize.height());
+    verticalScrollBar()->setGeometry(scrollbarRect);
 }
 
 QString TaskProgressViewPrivate::shortened(QString txt, int maxlen)
