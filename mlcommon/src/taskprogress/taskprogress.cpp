@@ -95,24 +95,24 @@ public:
         emit dataChanged(index(idx.row(), 0), index(idx.row(), columnCount() - 1));
     }
 
-    void log(const QModelIndex& idx, const QString& message)
+    void log(const QModelIndex& idx, const QString& message, const QDateTime &dt = QDateTime::currentDateTime())
     {
         TaskProgressAgentPrivate* task = info(idx);
         if (!task)
             return;
         beginInsertRows(idx, 0, 0);
-        task->m_info.log_messages.append(message);
+        task->m_info.log_messages.append(TaskProgressLogMessage(dt, message));
         endInsertRows();
         task->emitChanged();
     }
 
-    void error(const QModelIndex& idx, const QString& message)
+    void error(const QModelIndex& idx, const QString& message, const QDateTime &dt = QDateTime::currentDateTime())
     {
         TaskProgressAgentPrivate* task = info(idx);
         if (!task)
             return;
         beginInsertRows(idx, 0, 0);
-        task->m_info.log_messages.append(tr("Error: %1").arg(message));
+        task->m_info.log_messages.append(TaskProgressLogMessage(dt, tr("Error: %1").arg(message)));
         task->m_info.error = message;
         endInsertRows();
         task->emitChanged();
@@ -138,7 +138,7 @@ public:
         emit dataChanged(index(idx.row(), 0), index(idx.row(), columnCount() - 1));
     }
 
-    void completeTask(const QModelIndex& index)
+    void completeTask(const QModelIndex& index, const QDateTime &dt = QDateTime::currentDateTime())
     {
         TaskProgressAgentPrivate* task = info(index);
         if (!task)
@@ -146,7 +146,7 @@ public:
         int row = index.row();
         int newRow = rowCount();
         task->m_info.progress = 1.0;
-        task->m_info.end_time = QDateTime::currentDateTime();
+        task->m_info.end_time = dt;
         if (row == newRow - 1)
             return;
         beginMoveRows(QModelIndex(), row, row, QModelIndex(), newRow);
@@ -188,6 +188,234 @@ public:
 
     QHash<int, TaskProgressAgentPrivate*> m_map;
 };
+
+namespace ChangeLog {
+    /*!
+ * \class Change
+ * \brief The Change class represents a pending change to the task model
+ */
+    class Change {
+    public:
+        virtual ~Change() {}
+        virtual int type() const { return 0; }
+        virtual void exec(TaskProgressModelPrivate* model, const QPersistentModelIndex& index) = 0;
+        virtual bool merge(Change* other)
+        {
+            return false;
+        }
+    };
+
+    class ProgressChange : public Change {
+    public:
+        enum {
+            Type = 1
+        };
+        ProgressChange(double value)
+            : m_value(value)
+        {
+        }
+        int type() const { return Type; }
+        void exec(TaskProgressModelPrivate* model, const QPersistentModelIndex& index)
+        {
+            model->modifyTask(index, m_value, TaskProgressModel::ProgressRole);
+        }
+        bool merge(Change* other)
+        {
+            // merge two subsequent progress changes
+            if (other->type() != ProgressChange::Type) {
+                return false;
+            }
+            static_cast<ProgressChange*>(other)->m_value = m_value;
+            return true;
+        }
+
+    private:
+        double m_value;
+    };
+
+    class LabelChange : public Change {
+    public:
+        enum {
+            Type = 2
+        };
+        int type() const { return Type; }
+        LabelChange(const QString& label)
+            : m_label(label)
+        {
+        }
+        void exec(TaskProgressModelPrivate* model, const QPersistentModelIndex& index)
+        {
+            model->setLabel(index, m_label);
+        }
+        bool merge(Change* other)
+        {
+            // merge two subsequent label changes
+            if (other->type() != LabelChange::Type) {
+                return false;
+            }
+            static_cast<LabelChange*>(other)->m_label = m_label;
+            return true;
+        }
+
+    private:
+        QString m_label;
+    };
+
+    class DescriptionChange : public Change {
+    public:
+        enum {
+            Type = 3
+        };
+        int type() const { return Type; }
+        DescriptionChange(const QString& description)
+            : m_description(description)
+        {
+        }
+        void exec(TaskProgressModelPrivate* model, const QPersistentModelIndex& index)
+        {
+            model->setDescription(index, m_description);
+        }
+        bool merge(Change* other)
+        {
+            // merge two subsequent description changes
+            if (other->type() != DescriptionChange::Type) {
+                return false;
+            }
+            static_cast<DescriptionChange*>(other)->m_description = m_description;
+            return true;
+        }
+
+    private:
+        QString m_description;
+    };
+
+    class AddTagChange : public Change {
+    public:
+        AddTagChange(const QString& tag)
+            : m_tag(tag)
+        {
+        }
+        void exec(TaskProgressModelPrivate* model, const QPersistentModelIndex& index)
+        {
+            model->addTag(index, m_tag);
+        }
+
+    private:
+        QString m_tag;
+    };
+
+    class RemoveTagChange : public Change {
+    public:
+        RemoveTagChange(const QString& tag)
+            : m_tag(tag)
+        {
+        }
+        void exec(TaskProgressModelPrivate* model, const QPersistentModelIndex& index)
+        {
+            model->removeTag(index, m_tag);
+        }
+
+    private:
+        QString m_tag;
+    };
+
+    class AppendLogChange : public Change {
+    public:
+        AppendLogChange(const QString& message)
+            : m_message(message)
+            , m_time(QDateTime::currentDateTime())
+        {
+        }
+        void exec(TaskProgressModelPrivate* model, const QPersistentModelIndex& index)
+        {
+            model->log(index, m_message, m_time);
+        }
+
+    private:
+        QString m_message;
+        QDateTime m_time;
+    };
+
+    class AppendErrorChange : public Change {
+    public:
+        AppendErrorChange(const QString& message)
+            : m_message(message)
+            , m_time(QDateTime::currentDateTime())
+        {
+        }
+        void exec(TaskProgressModelPrivate* model, const QPersistentModelIndex& index)
+        {
+            model->error(index, m_message, m_time);
+        }
+
+    private:
+        QString m_message;
+        QDateTime m_time;
+    };
+
+    class FinishChange : public Change {
+    public:
+        FinishChange()
+            : m_time(QDateTime::currentDateTime())
+        {
+        }
+        void exec(TaskProgressModelPrivate* model, const QPersistentModelIndex& index)
+        {
+            model->completeTask(index, m_time);
+        }
+
+    private:
+        QDateTime m_time;
+    };
+
+    class Manager {
+    public:
+        void add(int id, Change* change)
+        {
+            if (!m_log.contains(id)) {
+                m_log.insert(id, ChangeList());
+            }
+            ChangeList& changeList = m_log[id];
+            if (!changeList.isEmpty()) {
+                Change* last = changeList.last();
+                if (change->merge(last)) {
+                    delete change;
+                    change = 0;
+                }
+            }
+            if (change)
+                changeList.append(change);
+        }
+
+        void exec(TaskProgressModelPrivate* model)
+        {
+            for (auto iter = m_log.cbegin(); iter != m_log.cend(); ++iter) {
+                const int id = iter.key();
+                const ChangeList& cl = iter.value();
+                QPersistentModelIndex index = model->indexById(id);
+                if (!index.isValid()) {
+                    qWarning("Id %d doesn't exist", id);
+                    continue;
+                }
+                foreach (Change* ch, cl) {
+                    ch->exec(model, index);
+                }
+            }
+            clear();
+        }
+
+    private:
+        typedef QList<Change*> ChangeList;
+        void clear()
+        {
+            foreach (const ChangeList& cl, m_log.values()) {
+                qDeleteAll(cl);
+            }
+            m_log.clear();
+        }
+        QHash<int, ChangeList> m_log;
+    };
+}
 
 class TaskProgressEvent : public QEvent {
 public:
@@ -284,43 +512,53 @@ public:
     static TaskProgressMonitorPrivate* privateInstance();
 
 protected:
+    void start() {
+        if (m_timerId) return;
+        m_timerId = startTimer(500);
+    }
+    void stop() {
+        if (!m_timerId) return;
+        killTimer(m_timerId);
+        m_timerId = 0;
+    }
+
     void customEvent(QEvent* event)
     {
         if (event->type() != TaskProgressEvent::type()) {
             event->ignore();
             return;
         }
+        start();
         TaskProgressEvent* tpEvent = static_cast<TaskProgressEvent*>(event);
         if (tpEvent->command() == TaskProgressEvent::Create) {
             TaskInfo info = tpEvent->value().value<TaskInfo>();
             m_model->addTask(tpEvent->id(), info);
         }
-        QModelIndex index = m_model->indexById(tpEvent->id());
         const QVariant& value = tpEvent->value();
         switch (tpEvent->command()) {
         case TaskProgressEvent::SetLabel:
-            m_model->setLabel(index, value.toString());
+            m_changeManager.add(tpEvent->id(), new ChangeLog::LabelChange(value.toString()));
             break;
         case TaskProgressEvent::SetDescription:
-            m_model->setDescription(index, value.toString());
+            m_changeManager.add(tpEvent->id(), new ChangeLog::DescriptionChange(value.toString()));
             break;
         case TaskProgressEvent::AddTag:
-            m_model->addTag(index, value.toString());
+            m_changeManager.add(tpEvent->id(), new ChangeLog::AddTagChange(value.toString()));
             break;
         case TaskProgressEvent::RemoveTag:
-            m_model->removeTag(index, value.toString());
+            m_changeManager.add(tpEvent->id(), new ChangeLog::RemoveTagChange(value.toString()));
             break;
         case TaskProgressEvent::AppendLog:
-            m_model->log(index, value.toString());
+            m_changeManager.add(tpEvent->id(), new ChangeLog::AppendLogChange(value.toString()));
             break;
         case TaskProgressEvent::AppendError:
-            m_model->error(index, value.toString());
+            m_changeManager.add(tpEvent->id(), new ChangeLog::AppendErrorChange(value.toString()));
             break;
         case TaskProgressEvent::SetProgress:
-            m_model->modifyTask(index, value, TaskProgressModel::ProgressRole);
+            m_changeManager.add(tpEvent->id(), new ChangeLog::ProgressChange(value.toDouble()));
             break;
         case TaskProgressEvent::Finish:
-            m_model->completeTask(index);
+            m_changeManager.add(tpEvent->id(), new ChangeLog::FinishChange);
             break;
         case TaskProgressEvent::Create:
             break; // handled earlier
@@ -329,10 +567,19 @@ protected:
             break;
         }
     }
+    void timerEvent(QTimerEvent* event)
+    {
+        if (event->timerId() == m_timerId) {
+            m_changeManager.exec(m_model);
+            stop();
+        }
+    }
 
 private:
     TaskProgressModelPrivate* m_model;
     QMap<QString, double> m_quantities;
+    ChangeLog::Manager m_changeManager;
+    int m_timerId = 0;
 };
 
 Q_GLOBAL_STATIC(TaskProgressMonitorPrivate, _q_tpm_instance)
