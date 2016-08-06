@@ -2,53 +2,24 @@
 
 #include <QVector>
 
-struct special_comparer_struct {
-    double val;
-    long index;
-};
-struct special_comparer {
-    bool operator()(const special_comparer_struct& a, const special_comparer_struct& b) const
-    {
-        if (a.val < b.val)
-            return true;
-        else if (a.val == b.val) {
-            return (a.index < b.index);
-        }
-        else
-            return false;
-    }
-};
-
 QList<long> get_sort_indices(const QList<long>& X)
 {
-    QList<special_comparer_struct> list;
-    for (long i = 0; i < X.count(); i++) {
-        special_comparer_struct tmp;
-        tmp.val = X[i];
-        tmp.index = i;
-        list << tmp;
-    }
-    qSort(list.begin(), list.end(), special_comparer());
-    QList<long> ret;
-    for (int i = 0; i < list.count(); i++) {
-        ret << list[i].index;
-    }
-    return ret;
+    QList<long> result;
+    result.reserve(X.size());
+    for (int i = 0; i < X.size(); ++i)
+        result << i;
+    std::stable_sort(result.begin(), result.end(),
+                     [&X](int i1, int i2) { return X[i1] < X[i2]; });
+    return result;
 }
 
 QList<long> get_sort_indices(const QVector<double>& X)
 {
-    QList<special_comparer_struct> list;
-    for (long i = 0; i < X.count(); i++) {
-        special_comparer_struct tmp;
-        tmp.val = X[i];
-        tmp.index = i;
-        list << tmp;
-    }
-    qSort(list.begin(), list.end(), special_comparer());
-    QList<long> ret;
-    for (int i = 0; i < list.count(); i++) {
-        ret << list[i].index;
-    }
-    return ret;
+    QList<long> result;
+    result.reserve(X.size());
+    for (int i = 0; i < X.size(); ++i)
+        result << i;
+    std::stable_sort(result.begin(), result.end(),
+                     [&X](int i1, int i2) { return X[i1] < X[i2]; });
+    return result;
 }
