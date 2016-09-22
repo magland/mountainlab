@@ -114,6 +114,127 @@ double compute_peak_cpu_pct(const QList<MonitorStats>& stats);
 //void log_begin(int argc,char* argv[]);
 //void //log_end();
 
+class MountainProcess {
+public:
+    MountainProcess() {
+
+    }
+
+    bool list_processors() {
+        ProcessManager* PM = ProcessManager::globalInstance();
+        if (!initialize_process_manager()) { //load the processor plugins etc
+            //log_end();
+            return false;
+        }
+        QStringList pnames = PM->processorNames();
+        qSort(pnames);
+        foreach (QString pname, pnames) {
+            printf("%s\n", pname.toLatin1().data());
+        }
+        //log_end();
+        return true;
+    }
+    bool spec(const QString &name) {
+        ProcessManager* PM = ProcessManager::globalInstance();
+        if (!initialize_process_manager()) { //load the processor plugins etc
+            //log_end();
+            return false;
+        }
+        MLProcessor MLP = PM->processor(name);
+        QString json = QJsonDocument(MLP.spec).toJson(QJsonDocument::Indented);
+        printf("%s\n", json.toLatin1().data());
+        return true;
+    }
+
+    bool daemon_start() {
+        /*
+         *  The following magic ensures we detach from the parent process
+         *  and from the controlling terminal. This is to prevent process
+         *  that spawned us to wait for our children to complete.
+         */
+#ifdef Q_OS_LINUX
+        // fork, setsid(?), redirect stdout to /dev/null
+        if (daemon(1, 0)) {
+            exit(1);
+        }
+#else
+        // fork, setsid, fork, redirect stdout to /dev/null
+        if (fork() > 0) {
+            exit(0);
+        }
+        Q_UNUSED(setsid());
+        if (fork() > 0) {
+            exit(0);
+        }
+        int devnull = open("/dev/null", O_WRONLY);
+        Q_UNUSED(dup2(devnull, STDOUT_FILENO));
+        Q_UNUSED(dup2(devnull, STDERR_FILENO));
+#endif
+        if (!initialize_process_manager()) {
+            //log_end();
+            return false;
+        }
+        QString log_path = MLUtil::mlLogPath() + "/mountainprocess";
+        QString mdaserver_base_path = MLUtil::configResolvedPath("mountainprocess", "mdaserver_base_path");
+        QString mdachunk_data_path = MLUtil::configResolvedPath("server", "mdachunk_data_path");
+        //figure out what to do about this cleaner business
+        TempFileCleaner cleaner;
+        cleaner.addPath(MLUtil::tempPath() + "/tmp_short_term", MAX_SHORT_TERM_GB);
+        cleaner.addPath(MLUtil::tempPath() + "/tmp_long_term", MAX_LONG_TERM_GB);
+        cleaner.addPath(mdaserver_base_path + "/tmp_short_term", MAX_SHORT_TERM_GB);
+        cleaner.addPath(mdaserver_base_path + "/tmp_long_term", MAX_LONG_TERM_GB);
+        cleaner.addPath(mdachunk_data_path + "/tmp_short_term", MAX_MDACHUNK_GB);
+        cleaner.addPath(mdachunk_data_path + "/tmp_long_term", MAX_MDACHUNK_GB);
+        MPDaemon X;
+        X.setLogPath(log_path);
+        ProcessResources RR;
+        RR.num_threads = qMax(1.0, MLUtil::configValue("mountainprocess", "num_threads").toDouble());
+        RR.memory_gb = qMax(1.0, MLUtil::configValue("mountainprocess", "memory_gb").toDouble());
+        X.setTotalResourcesAvailable(RR);
+        return X.run();
+    }
+
+    bool daemon_stop() {
+        MPDaemonInterface X;
+        return X.stop();
+    }
+
+    bool daemon_restart() {
+        MPDaemonInterface X;
+        if (!X.stop() || !X.start())
+            return false;
+        printf("Daemon has been restarted.\n");
+        return true;
+    }
+    bool daemon_state() {
+        MPDaemonInterface X;
+        QJsonObject state = X.getDaemonState();
+        QString json = QJsonDocument(state).toJson();
+        printf("%s", json.toLatin1().data());
+        //log_end();
+        return true;
+    }
+
+    bool daemon_state_summary() {
+        MPDaemonInterface X;
+        QString txt = get_daemon_state_summary(X.getDaemonState());
+        printf("%s", qPrintable(txt));
+        //log_end();
+        return true;
+    }
+    bool clear_processing() {
+        MPDaemonInterface X;
+        X.clearProcessing();
+        //log_end();
+        return true;
+    }
+
+private:
+
+};
+
+int retCode(bool v) { return v ? 0 : -1; }
+
 int main(int argc, char* argv[])
 {
     QCoreApplication app(argc, argv);
@@ -126,6 +247,7 @@ int main(int argc, char* argv[])
         //log_end();
         return -1;
     }
+    MountainProcess prog;
 
     QString arg1 = CLP.unnamed_parameters.value(0);
     QString arg2 = CLP.unnamed_parameters.value(1);
@@ -161,26 +283,10 @@ int main(int argc, char* argv[])
     }
 
     if (arg1 == "list-processors") { //Provide a human-readable list of the available processors
-        if (!initialize_process_manager()) { //load the processor plugins etc
-            //log_end();
-            return -1;
-        }
-        QStringList pnames = PM->processorNames();
-        qSort(pnames);
-        foreach (QString pname, pnames) {
-            printf("%s\n", pname.toLatin1().data());
-        }
-        //log_end();
-        return 0;
+        return retCode(prog.list_processors());
     }
     else if (arg1 == "spec") {
-        if (!initialize_process_manager()) { //load the processor plugins etc
-            //log_end();
-            return -1;
-        }
-        MLProcessor MLP = PM->processor(arg2);
-        QString json = QJsonDocument(MLP.spec).toJson(QJsonDocument::Indented);
-        printf("%s\n", json.toLatin1().data());
+        return retCode(prog.spec(arg2));
     }
     else if (arg1 == "run-process") { //Run a process synchronously
         if (!initialize_process_manager()) {
@@ -352,70 +458,11 @@ int main(int argc, char* argv[])
         return ret;
     }
     else if (arg1 == "daemon-start") {
-        /*
-         *  The following magic ensures we detach from the parent process
-         *  and from the controlling terminal. This is to prevent process
-         *  that spawned us to wait for our children to complete.
-         */
-#ifdef Q_OS_LINUX
-        // fork, setsid(?), redirect stdout to /dev/null
-        if (daemon(1, 0)) {
-            exit(1);
-        }
-#else
-        // fork, setsid, fork, redirect stdout to /dev/null
-        if (fork() > 0) {
-            exit(0);
-        }
-        Q_UNUSED(setsid());
-        if (fork() > 0) {
-            exit(0);
-        }
-        int devnull = open("/dev/null", O_WRONLY);
-        Q_UNUSED(dup2(devnull, STDOUT_FILENO));
-        Q_UNUSED(dup2(devnull, STDERR_FILENO));
-#endif
-
-        if (!initialize_process_manager()) {
-            //log_end();
-            return -1;
-        }
-        QString mdaserver_base_path = MLUtil::configResolvedPath("mountainprocess", "mdaserver_base_path");
-        QString mdachunk_data_path = MLUtil::configResolvedPath("server", "mdachunk_data_path");
-        //figure out what to do about this cleaner business
-        TempFileCleaner cleaner;
-        cleaner.addPath(MLUtil::tempPath() + "/tmp_short_term", MAX_SHORT_TERM_GB);
-        cleaner.addPath(MLUtil::tempPath() + "/tmp_long_term", MAX_LONG_TERM_GB);
-        cleaner.addPath(mdaserver_base_path + "/tmp_short_term", MAX_SHORT_TERM_GB);
-        cleaner.addPath(mdaserver_base_path + "/tmp_long_term", MAX_LONG_TERM_GB);
-        cleaner.addPath(mdachunk_data_path + "/tmp_short_term", MAX_MDACHUNK_GB);
-        cleaner.addPath(mdachunk_data_path + "/tmp_long_term", MAX_MDACHUNK_GB);
-        MPDaemon X;
-        X.setLogPath(log_path);
-        ProcessResources RR;
-        RR.num_threads = qMax(1.0, MLUtil::configValue("mountainprocess", "num_threads").toDouble());
-        RR.memory_gb = qMax(1.0, MLUtil::configValue("mountainprocess", "memory_gb").toDouble());
-        X.setTotalResourcesAvailable(RR);
-        if (!X.run()) {
-            //log_end();
-            return -1;
-        }
-        //log_end();
-        return 0;
+        return retCode(prog.daemon_start());
     } else if (arg1 == "daemon-stop") { //Stop the daemon
-        MPDaemonInterface X;
-        if (X.stop())
-            return 0;
-        else
-            return -1;
+        return retCode(prog.daemon_stop());
     } else if (arg1 == "daemon-restart") { //Restart the daemon
-        MPDaemonInterface X;
-        if (!X.stop())
-            return -1;
-        if (!X.start())
-            return -1;
-        printf("Daemon has been restarted.\n");
-        return 0;
+        return retCode(prog.daemon_restart());
     }
     /*
     else if (arg1 == "-internal-daemon-start") { //This is called internaly to start the daemon (which is the central program running in the background)
@@ -426,24 +473,15 @@ int main(int argc, char* argv[])
     }
     */
     else if (arg1 == "daemon-state") { //Print some information on the state of the daemon
-        MPDaemonInterface X;
-        QJsonObject state = X.getDaemonState();
-        QString json = QJsonDocument(state).toJson();
-        printf("%s", json.toLatin1().data());
-        //log_end();
+        prog.daemon_state();
         return 0;
     }
     else if (arg1 == "daemon-state-summary") { //Print some information on the state of the daemon
-        MPDaemonInterface X;
-        QString txt = get_daemon_state_summary(X.getDaemonState());
-        printf("%s", txt.toLatin1().data());
-        //log_end();
+        prog.daemon_state_summary();
         return 0;
     }
     else if (arg1 == "clear-processing") {
-        MPDaemonInterface X;
-        X.clearProcessing();
-        //log_end();
+        prog.clear_processing();
         return 0;
     }
     else if (arg1 == "queue-script") { //Queue a script -- to be executed when resources are available
