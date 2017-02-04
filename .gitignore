@@ -1,5 +1,9 @@
 html
 
+# User Options
+
+mountainlab.user.json
+
 # C++ objects and libs
 
 *.slo
