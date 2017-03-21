@@ -6,7 +6,7 @@
 
 #ifndef MLCOMMON_H
 #define MLCOMMON_H
-
+#include <math.h>
 #include <QTextCodec>
 #include <QDebug>
 #include <QJsonValue>
