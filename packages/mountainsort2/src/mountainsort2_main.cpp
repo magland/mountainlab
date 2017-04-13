@@ -131,6 +131,7 @@ QJsonObject get_spec()
         X.addInputs("clips");
         X.addOutputs("labels_out");
         //X.addRequiredParameters();
+        X.addOptionalParameter("isocut_threshold", "", 1);
         processors.push_back(X.get_spec());
     }
     {
