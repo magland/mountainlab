@@ -39,6 +39,20 @@ bool p_extract_neighborhood_timeseries(QString timeseries, QString timeseries_ou
     return true;
 }
 
+bool p_extract_geom_channels(QString geom, QString geom_out, QList<int> channels)
+{
+    Mda X;
+    X.readCsv(geom);
+    Mda X2(X.N1(), channels.count());
+    for (int i = 0; i < channels.count(); i++) {
+        for (int j = 0; j < X.N1(); j++) {
+            double val = X.value(j, channels[i]);
+            X2.setValue(val, j, i);
+        }
+    }
+    return X2.writeCsv(geom_out);
+}
+
 namespace P_extract_neighborhood_timeseries {
 Mda32 extract_neighborhood(const Mda32& X, QList<int> channels)
 {

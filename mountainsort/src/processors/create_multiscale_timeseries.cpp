@@ -18,7 +18,7 @@ bool create_multiscale_timeseries(QString path_in, QString path_out)
 
     bigint N = smallest_power_of_3_larger_than(X.N2());
 
-    QStringList file_names;
+    QStringList tmp_file_names;
     QString prev_min_fname;
     QString prev_max_fname;
     for (bigint ds_factor = 3; ds_factor <= N; ds_factor *= 3) {
@@ -28,37 +28,57 @@ bool create_multiscale_timeseries(QString path_in, QString path_out)
         if (ds_factor == 3) {
             if (!downsample_min(X, min_fname, N)) {
                 printf("Problem in downsample_min\n");
+                printf("Removing temporary files\n");
+                foreach (QString fname, tmp_file_names) {
+                    QFile::remove(fname);
+                }
                 return false;
             }
             if (!downsample_max(X, max_fname, N)) {
                 printf("Problem in downsample_max\n");
+                printf("Removing temporary files\n");
+                foreach (QString fname, tmp_file_names) {
+                    QFile::remove(fname);
+                }
                 return false;
             }
         }
         else {
             if (!downsample_min(DiskReadMda(prev_min_fname), min_fname, (N * 3) / ds_factor)) {
                 printf("Problem in downsample_min *\n");
+                printf("Removing temporary files\n");
+                foreach (QString fname, tmp_file_names) {
+                    QFile::remove(fname);
+                }
                 return false;
             }
             if (!downsample_max(DiskReadMda(prev_max_fname), max_fname, (N * 3) / ds_factor)) {
                 printf("Problem in downsample_max *\n");
+                printf("Removing temporary files\n");
+                foreach (QString fname, tmp_file_names) {
+                    QFile::remove(fname);
+                }
                 return false;
             }
         }
-        file_names << min_fname;
-        file_names << max_fname;
+        tmp_file_names << min_fname;
+        tmp_file_names << max_fname;
         prev_min_fname = min_fname;
         prev_max_fname = max_fname;
         printf("...................\n");
     }
 
     printf("Writing concatenation...\n");
-    if (!write_concatenation(file_names, path_out)) {
+    if (!write_concatenation(tmp_file_names, path_out)) {
         printf("Problem in write_concatenation\n");
+        printf("Removing temporary files\n");
+        foreach (QString fname, tmp_file_names) {
+            QFile::remove(fname);
+        }
         return false;
     }
     printf("Removing temporary files\n");
-    foreach (QString fname, file_names) {
+    foreach (QString fname, tmp_file_names) {
         QFile::remove(fname);
     }
 

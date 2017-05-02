@@ -258,7 +258,7 @@ void GuideV1Private::show_instructions(QString title, QString instructions)
 class compute_cluster_channel_matrix_thread : public QThread {
 public:
     //input
-    DiskReadMda timeseries;
+    DiskReadMda32 timeseries;
     DiskReadMda firings;
     QString mlproxy_url;
     int clip_size;

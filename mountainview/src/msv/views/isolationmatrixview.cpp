@@ -90,7 +90,7 @@ class IsolationMatrixViewCalculator {
 public:
     //input
     QString mlproxy_url;
-    DiskReadMda timeseries;
+    DiskReadMda32 timeseries;
     DiskReadMda firings;
     int clip_size = 50;
     double add_noise_level = 0.25;

@@ -9,6 +9,8 @@
 
 namespace P_whiten {
 
+void scale_for_quantization(Mda32& X, double quantization_unit);
+
 double quantize(float X, double unit)
 {
     return (floor(X / unit + 0.5)) * unit;
@@ -95,7 +97,10 @@ bool p_whiten(QString timeseries, QString timeseries_out, Whiten_opts opts)
     double* WWptr = WW.dataPtr();
 
     DiskWriteMda Y;
-    Y.open(MDAIO_TYPE_FLOAT32, timeseries_out, M, N);
+    int dtype = MDAIO_TYPE_FLOAT32;
+    if (opts.quantization_unit > 0)
+        dtype = MDAIO_TYPE_INT16;
+    Y.open(dtype, timeseries_out, M, N);
     {
         QTime timer;
         timer.start();
@@ -127,6 +132,9 @@ bool p_whiten(QString timeseries, QString timeseries_out, Whiten_opts opts)
                 // The following is needed to make the output deterministic, due to a very tricky floating-point problem that I honestly could not track down
                 // It has something to do with multiplying by very small values of WWptr[bb]. But I truly could not pinpoint the exact problem.
                 P_whiten::quantize(chunk_out.totalSize(), chunk_out.dataPtr(), 0.0001);
+                if (opts.quantization_unit > 0) {
+                    P_whiten::scale_for_quantization(chunk_out, opts.quantization_unit);
+                }
                 if (!Y.writeChunk(chunk_out, 0, timepoint)) {
                     qWarning() << "Problem writing chunk in whiten";
                 }
@@ -244,7 +252,10 @@ bool p_whiten_clips(QString clips_path, QString whitening_matrix, QString clips_
 
     qDebug().noquote() << "Whitening..." << M << T << L;
 
-    DiskWriteMda clips_out(MDAIO_TYPE_FLOAT32, clips_out_path, M, T, L);
+    int dtype = MDAIO_TYPE_FLOAT32;
+    if (opts.quantization_unit > 0)
+        dtype = MDAIO_TYPE_INT16;
+    DiskWriteMda clips_out(dtype, clips_out_path, M, T, L);
 
     for (bigint i = 0; i < L; i++) {
         Mda32 chunk;
@@ -268,6 +279,9 @@ bool p_whiten_clips(QString clips_path, QString whitening_matrix, QString clips_
                     }
                 }
             }
+        }
+        if (opts.quantization_unit > 0) {
+            P_whiten::scale_for_quantization(chunk_out, opts.quantization_unit);
         }
         if (!clips_out.writeChunk(chunk_out, 0, 0, i)) {
             qWarning() << "Problem writing chunk";
@@ -305,7 +319,10 @@ bool p_apply_whitening_matrix(QString timeseries, QString whitening_matrix, QStr
     double* WWptr = WW.dataPtr();
 
     DiskWriteMda Y;
-    Y.open(MDAIO_TYPE_FLOAT32, timeseries_out, M, N);
+    int dtype = MDAIO_TYPE_FLOAT32;
+    if (opts.quantization_unit > 0)
+        dtype = MDAIO_TYPE_INT16;
+    Y.open(dtype, timeseries_out, M, N);
     {
         QTime timer;
         timer.start();
@@ -337,6 +354,9 @@ bool p_apply_whitening_matrix(QString timeseries, QString whitening_matrix, QStr
                 // The following is needed to make the output deterministic, due to a very tricky floating-point problem that I honestly could not track down
                 // It has something to do with multiplying by very small values of WWptr[bb]. But I truly could not pinpoint the exact problem.
                 P_whiten::quantize(chunk_out.totalSize(), chunk_out.dataPtr(), 0.0001);
+                if (opts.quantization_unit > 0) {
+                    P_whiten::scale_for_quantization(chunk_out, opts.quantization_unit);
+                }
                 if (!Y.writeChunk(chunk_out, 0, timepoint)) {
                     qWarning() << "Problem writing chunk in apply whitening matrix";
                 }
@@ -366,5 +386,13 @@ Mda32 extract_channels_from_chunk(const Mda32& X, const QList<int>& channels)
         }
     }
     return ret;
+}
+
+void scale_for_quantization(Mda32& X, double quantization_unit)
+{
+    bigint N = X.totalSize();
+    for (bigint i = 0; i < N; i++) {
+        X.set((int)((X.get(i) / quantization_unit) + 0.5), i);
+    }
 }
 }

@@ -8,6 +8,7 @@
 #define MDACONVERT_H
 
 #include <QDebug>
+#include "mlcommon.h"
 
 struct mdaconvert_opts {
     QString input_path;
@@ -21,7 +22,7 @@ struct mdaconvert_opts {
     QString output_dtype; // uint16, float32, ...
     QString output_format; // mda, raw, ...
 
-    QList<int> dims;
+    QList<bigint> dims;
 
     bool check_input_file_size = true;
 };

@@ -10,5 +10,6 @@
 #include "mlcommon.h"
 
 bool p_extract_neighborhood_timeseries(QString timeseries, QString timeseries_out, QList<int> channels);
+bool p_extract_geom_channels(QString geom, QString geom_out, QList<int> channels);
 
 #endif // P_EXTRACT_NEIGHBORHOOD_TIMESERIES_H

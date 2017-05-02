@@ -15,6 +15,7 @@ function main(params) {
 		multichannel:'false',
 		merge_across_channels:'false',
 		adjacency_radius:0,
+		channels:'', //comma-separated list of channels to analyze
 		prescribed_event_times:'' //you can supply your own file of event times (only works for multichannel=false). Otherwise, if empty, it will detect the events as part of processing
 	});
 	var clip_size=Math.floor(params.clip_size_msec/1000*params.samplerate);
@@ -28,6 +29,12 @@ function main(params) {
 	//var sessions=[];
 	if (file_exists(inpath+'/raw.mda.prv')) {
 		raw=inpath+'/raw.mda.prv';
+		if (params.channels) {
+			raw=extract_channels(raw,params.channels);
+			if (params.geom) {
+				params.geom=extract_geom_channels(params.geom,params.channels);
+			}
+		}
 		filt=bandpass_filter(raw,params.samplerate,params.freq_min,params.freq_max,params.freq_wid,params.quantization_unit);
 	}
 	else {
@@ -56,6 +63,14 @@ function main(params) {
 	}
 
 	var params2=clone(params);
+	params2.channels='';
+	params2.merge_across_channels='';
+	params2.fit_stage='';
+
+	var pre=Process('whiten',{
+					timeseries:filt
+				},{}
+			).timeseries_out;
 
 	var firings;
 	if (params.multichannel=='true') {
@@ -73,8 +88,9 @@ function main(params) {
 			}).firings_out;
 		}
 		if (params.fit_stage=='true') {
+			
 			firings=Process('mountainsort.fit_stage',
-				{timeseries:filt,firings:firings},
+				{timeseries:pre,firings:firings},
 				{}).firings_out;
 		}
 	}
@@ -115,11 +131,6 @@ function main(params) {
 			{samplerate:params.samplerate,_request_num_threads:params.num_threads}
 	).cluster_metrics_out;
 
-	var pre=Process('whiten',{
-			timeseries:filt
-		},{}
-	).timeseries_out;
-
 	var im_out=Process('mountainsort.isolation_metrics',
 			{timeseries:pre,firings:firings},
 			{_request_num_threads:params.num_threads},
@@ -137,7 +148,11 @@ function main(params) {
 	write_file(firings,params.outpath+'/firings.mda');	
 	write_file(cluster_metrics,params.outpath+'/cluster_metrics.json');
 	write_file(pair_metrics,params.outpath+'/cluster_pair_metrics.json');
+	if (params.geom) {
+		write_file(params.geom,params.outpath+'/geom.csv');
+	}
 	if (typeof(raw)=='string') {
+		console.log('################################# '+raw);
 		write_prv(raw,params.outpath+'/raw.mda.prv');
 		write_prv(filt,params.outpath+'/filt.mda.prv');
 	}
@@ -166,6 +181,26 @@ function main(params) {
 	*/
 
 	run_pipeline();
+}
+
+function extract_channels(timeseries,channels) {
+	console.log ('extract_channels: '+timeseries+' '+channels);
+	
+	var ret=Process('mountainsort.extract_neighborhood_timeseries',
+		{timeseries:timeseries},
+		{channels:channels}
+	).timeseries_out;
+	return ret;
+}
+
+function extract_geom_channels(geom,channels) {
+	console.log ('extract_geom_channels: '+geom+' '+channels);
+	
+	var ret=Process('mountainsort.extract_geom_channels',
+		{geom:geom},
+		{channels:channels}
+	).geom_out;
+	return ret;
 }
 
 function bandpass_filter(raw,samplerate,freq_min,freq_max,freq_wid,quantization_unit) {

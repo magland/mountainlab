@@ -56,8 +56,8 @@ public:
 
     //output
     QImage image;
-    Mda min_data;
-    Mda max_data;
+    Mda32 min_data;
+    Mda32 max_data;
 
     void run();
 };

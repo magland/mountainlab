@@ -322,13 +322,13 @@ exports.make_system_call=function(cmd,args,callback) {
 	pp.on('close', function(code) {
 		if (done) return;
   		done=true;
-		if (callback) callback();
+		if (callback) callback({stdout:all_stdout,stderr:all_stderr});
 		s_num_system_calls_running--;
 	});
 	pp.on('exit', function(code) {
 		if (done) return;
   		done=true;
-		if (callback) callback();
+		if (callback) callback({stdout:all_stdout,stderr:all_stderr});
 		s_num_system_calls_running--;
 	});
 	pp.on('error',function(err) {

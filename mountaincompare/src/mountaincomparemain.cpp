@@ -124,17 +124,17 @@ int main(int argc, char* argv[])
     }
     if (CLP.named_parameters.contains("raw")) {
         QString raw_path = CLP.named_parameters["raw"].toString();
-        context->addTimeseries("Raw Data", DiskReadMda(raw_path));
+        context->addTimeseries("Raw Data", DiskReadMda32(raw_path));
         context->setCurrentTimeseriesName("Raw Data");
     }
     if (CLP.named_parameters.contains("filt")) {
         QString filt_path = CLP.named_parameters["filt"].toString();
-        context->addTimeseries("Filtered Data", DiskReadMda(filt_path));
+        context->addTimeseries("Filtered Data", DiskReadMda32(filt_path));
         context->setCurrentTimeseriesName("Filtered Data");
     }
     if (CLP.named_parameters.contains("pre")) {
         QString pre_path = CLP.named_parameters["pre"].toString();
-        context->addTimeseries("Preprocessed Data", DiskReadMda(pre_path));
+        context->addTimeseries("Preprocessed Data", DiskReadMda32(pre_path));
         context->setCurrentTimeseriesName("Preprocessed Data");
     }
     /*

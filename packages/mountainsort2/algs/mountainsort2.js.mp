@@ -10,6 +10,8 @@ var processors_by_name={};
 //register_processor(require('./subsample_sort.js'));
 register_processor(require('./ms2_001.js'));
 register_processor(require('./ms2_001_multichannel.js'));
+register_processor(require('./ms2_002.js'));
+register_processor(require('./ms2_002_multineighborhood.js'));
 
 function register_processor(P) {
 	var spec0=P.spec();

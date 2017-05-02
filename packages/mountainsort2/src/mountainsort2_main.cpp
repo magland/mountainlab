@@ -49,6 +49,13 @@ QJsonObject get_spec()
         processors.push_back(X.get_spec());
     }
     {
+        ProcessorSpec X("mountainsort.extract_geom_channels", "0.11");
+        X.addInputs("geom");
+        X.addOutputs("geom_out");
+        X.addRequiredParameters("channels");
+        processors.push_back(X.get_spec());
+    }
+    {
         ProcessorSpec X("mountainsort.extract_segment_timeseries", "0.1");
         X.addInputs("timeseries");
         X.addOutputs("timeseries_out");
@@ -78,6 +85,7 @@ QJsonObject get_spec()
         X.addInputs("timeseries");
         X.addOutputs("timeseries_out");
         //X.addRequiredParameters();
+        X.addOptionalParameter("quantization_unit", "", 0);
         processors.push_back(X.get_spec());
     }
     {
@@ -93,6 +101,7 @@ QJsonObject get_spec()
         X.addInputs("clips", "whitening_matrix");
         X.addOutputs("clips_out");
         //X.addRequiredParameters();
+        X.addOptionalParameter("quantization_unit", "", 0);
         processors.push_back(X.get_spec());
     }
     {
@@ -100,6 +109,7 @@ QJsonObject get_spec()
         X.addInputs("timeseries", "whitening_matrix");
         X.addOutputs("timeseries_out");
         //X.addRequiredParameters();
+        X.addOptionalParameter("quantization_unit", "", 0);
         processors.push_back(X.get_spec());
     }
     {
@@ -135,18 +145,18 @@ QJsonObject get_spec()
         processors.push_back(X.get_spec());
     }
     {
-        ProcessorSpec X("mountainsort.reorder_labels", "0.1");
+        ProcessorSpec X("mountainsort.reorder_labels", "0.11");
         X.addInputs("templates", "firings");
         X.addOutputs("firings_out");
         //X.addRequiredParameters();
         processors.push_back(X.get_spec());
     }
     {
-        ProcessorSpec X("mountainsort.consolidate_clusters", "0.1");
-        X.addInputs("clips", "labels");
-        X.addOptionalInputs("amplitudes");
+        ProcessorSpec X("mountainsort.consolidate_clusters", "0.13");
+        X.addInputs("timeseries", "event_times", "labels");
         X.addOutputs("labels_out");
         X.addRequiredParameters("central_channel");
+        X.addOptionalParameter("consolidation_factor", "", 0.9);
         processors.push_back(X.get_spec());
     }
     {
@@ -166,7 +176,7 @@ QJsonObject get_spec()
         processors.push_back(X.get_spec());
     }
     {
-        ProcessorSpec X("mountainsort.fit_stage", "0.1");
+        ProcessorSpec X("mountainsort.fit_stage", "0.17");
         X.addInputs("timeseries", "firings");
         X.addOutputs("firings_out");
         //X.addRequiredParameters();
@@ -195,10 +205,11 @@ QJsonObject get_spec()
         processors.push_back(X.get_spec());
     }
     {
-        ProcessorSpec X("mountainsort.isolation_metrics", "0.13");
+        ProcessorSpec X("mountainsort.isolation_metrics", "0.15j");
         X.addInputs("timeseries", "firings");
         X.addOutputs("metrics_out");
         X.addOptionalOutputs("pair_metrics_out");
+        X.addOptionalParameter("compute_bursting_parents", "", "false");
         processors.push_back(X.get_spec());
     }
     {
@@ -208,7 +219,7 @@ QJsonObject get_spec()
         processors.push_back(X.get_spec());
     }
     {
-        ProcessorSpec X("mountainsort.split_firings", "0.14");
+        ProcessorSpec X("mountainsort.split_firings", "0.15");
         X.addInputs("timeseries_list", "firings");
         X.addOutputs("firings_out_list");
         //X.addRequiredParameters();
@@ -316,6 +327,13 @@ int main(int argc, char* argv[])
         QList<int> channels = MLUtil::stringListToIntList(channels_str);
         ret = p_extract_neighborhood_timeseries(timeseries, timeseries_out, channels);
     }
+    else if (arg1 == "mountainsort.extract_geom_channels") {
+        QString geom = CLP.named_parameters["geom"].toString();
+        QString geom_out = CLP.named_parameters["geom_out"].toString();
+        QStringList channels_str = CLP.named_parameters["channels"].toString().split(",", QString::SkipEmptyParts);
+        QList<int> channels = MLUtil::stringListToIntList(channels_str);
+        ret = p_extract_geom_channels(geom, geom_out, channels);
+    }
     else if (arg1 == "mountainsort.extract_segment_timeseries") {
         QStringList timeseries_list = MLUtil::toStringList(CLP.named_parameters["timeseries"]);
         QString timeseries_out = CLP.named_parameters["timeseries_out"].toString();
@@ -353,6 +371,7 @@ int main(int argc, char* argv[])
         QString timeseries = CLP.named_parameters["timeseries"].toString();
         QString timeseries_out = CLP.named_parameters["timeseries_out"].toString();
         Whiten_opts opts;
+        opts.quantization_unit = CLP.named_parameters["quantization_unit"].toDouble();
         ret = p_whiten(timeseries, timeseries_out, opts);
     }
     else if (arg1 == "mountainsort.compute_whitening_matrix") {
@@ -368,6 +387,7 @@ int main(int argc, char* argv[])
         QString whitening_matrix = CLP.named_parameters["whitening_matrix"].toString();
         QString clips_out = CLP.named_parameters["clips_out"].toString();
         Whiten_opts opts;
+        opts.quantization_unit = CLP.named_parameters["quantization_unit"].toDouble();
         ret = p_whiten_clips(clips, whitening_matrix, clips_out, opts);
     }
     else if (arg1 == "mountainsort.apply_whitening_matrix") {
@@ -375,6 +395,7 @@ int main(int argc, char* argv[])
         QString whitening_matrix = CLP.named_parameters["whitening_matrix"].toString();
         QString timeseries_out = CLP.named_parameters["timeseries_out"].toString();
         Whiten_opts opts;
+        opts.quantization_unit = CLP.named_parameters["quantization_unit"].toDouble();
         ret = p_apply_whitening_matrix(timeseries, whitening_matrix, timeseries_out, opts);
     }
     else if (arg1 == "mountainsort.detect_events") {
@@ -417,12 +438,14 @@ int main(int argc, char* argv[])
         ret = p_reorder_labels(templates, firings, firings_out);
     }
     else if (arg1 == "mountainsort.consolidate_clusters") {
-        QString clips = CLP.named_parameters["clips"].toString();
+        QString timeseries = CLP.named_parameters["timeseries"].toString();
+        QString event_times = CLP.named_parameters["event_times"].toString();
         QString labels = CLP.named_parameters["labels"].toString();
         QString labels_out = CLP.named_parameters["labels_out"].toString();
         Consolidate_clusters_opts opts;
         opts.central_channel = CLP.named_parameters["central_channel"].toInt();
-        ret = p_consolidate_clusters(clips, labels, labels_out, opts);
+        opts.consolidation_factor = CLP.named_parameters["consolidation_factor"].toDouble();
+        ret = p_consolidate_clusters(timeseries, event_times, labels, labels_out, opts);
     }
     else if (arg1 == "mountainsort.create_firings") {
         QString event_times = CLP.named_parameters["event_times"].toString();
@@ -481,6 +504,7 @@ int main(int argc, char* argv[])
         QString metrics_out = CLP.named_parameters["metrics_out"].toString();
         QString pair_metrics_out = CLP.named_parameters["pair_metrics_out"].toString();
         P_isolation_metrics_opts opts;
+        opts.compute_bursting_parents = (CLP.named_parameters["compute_bursting_parents"].toString() == "true");
         ret = p_isolation_metrics(timeseries_list, firings, metrics_out, pair_metrics_out, opts);
     }
     else if (arg1 == "mountainsort.combine_cluster_metrics") {

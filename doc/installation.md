@@ -1,5 +1,5 @@
 ### Supported operating systems:
-Linux/Ubuntu or Debian is by far the easiest. Mac and other Linux flavors should also work. Windows is not necessarily excluded.
+Linux/Ubuntu and Debian are the currently supported development platforms. Other Linux flavors should also work. There are plans to support Mac, but Windows is not currently supported.
 
 ### There are four steps to installing MountainLab
 

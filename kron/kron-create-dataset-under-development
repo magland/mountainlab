@@ -1,0 +1,130 @@
+#!/usr/bin/env nodejs
+
+function print_usage() {
+	console.log ('create-kron-run-input [pipeline_name] [dataset_name] [input.json]');
+}
+
+var fs=require('fs');
+var common=require(__dirname+'/common.node.js');
+
+var CLP=new common.CLParams(process.argv);
+
+var pipeline_name=CLP.unnamedParameters[0]||'';
+var dataset_name=CLP.unnamedParameters[1]||'';
+var output_fname=CLP.unnamedParameters[2]||'';
+
+if ((!pipeline_name)||(!dataset_name)||(!output_fname)) {
+	print_usage();
+	process.exit(-1);
+}
+
+var pipelines_path='pipelines.txt';
+var datasets_path='datasets.txt';
+var pipelines=common.read_pipelines_from_text_file(pipelines_path);
+var datasets=common.read_datasets_from_text_file(datasets_path);
+var interface=common.get_interface(); //for now it is hard-coded for spike sorting
+
+check_pipelines(pipeline_name);
+check_datasets(dataset_name);
+
+for (var p in pipelines) {
+	if (pipelines[p].name==pipeline_name) {
+		for (var d in datasets) {
+			if (datasets[d].name==dataset_name) {
+				var pipeline=pipelines[p];
+				var dataset=datasets[d];
+				create_kron_run_input(pipeline,dataset,output_fname);
+				return;
+			}
+		}
+	}
+}
+
+console.error('Unable to find pipeline or dataset.');
+process.exit(-1);
+
+function create_kron_run_input(pipeline,dataset,output_fname) {
+	var json={};
+	json.pipeline=create_kron_run_pipeline_object(pipeline);
+	json.dataset=create_kron_run_dataset_object(dataset);
+	common.write_text_file(output_fname,JSON.stringify(json,null,'\t'));
+}
+
+function create_kron_run_pipeline_object(pipeline) {
+	var script_content=common.read_text_file(pipeline.absolute_script_path);
+	if (!script_content) {
+		console.error('Problem reading script file: '+pipeline.absolute_script_path);
+		process.exit(-1);
+	}
+	var curation_script_content='';
+	if (pipeline.absolute_curation_script_path) {
+		curation_script_content=common.read_text_file(pipeline.absolute_curation_script_path);
+		if (!curation_script_content) {
+			console.error('Problem reading curation script file: '+pipeline.absolute_curation_script_path);
+			process.exit(-1);		
+		}
+	}
+	var ret={
+		name:pipeline.name,
+		script:{
+			content:script_content
+		},
+		curation_script:{
+			content:curation_script_content
+		},
+		arguments:pipeline.arguments
+	};
+	return ret;
+}
+
+function create_kron_run_dataset_object(dataset) {
+	var folder=dataset.absolute_folder_path;
+	var ret={
+		name:dataset.name
+	};
+	ret.raw=JSON.parse(common.read_text_file(folder+'/raw.mda.prv'));
+	if (common.file_exists(folder+'/params.json'))
+		ret.params=JSON.parse(common.read_text_file(folder+'/params.json')||{});
+	if (common.file_exists(folder+'/geom.csv')) {
+		geom_csv=common.read_text_file(folder+'/geom.csv')||'';
+		ret.geom={csv:geom_csv};
+	}
+	ret.arguments=dataset.arguments||{};
+	return ret;
+}
+
+function check_pipelines(pipnames) {
+	var vals=pipnames.split(',');
+	for (var i in vals) {
+		if (!valid_pipeline(vals[i])) {
+			print_error('Unable to find pipeline: '+vals[i]);
+			process.exit(-1);	
+		}
+	}
+}
+
+function check_datasets(dsnames) {
+	var vals=dsnames.split(',');
+	for (var i in vals) {
+		if (!valid_dataset(vals[i])) {
+			print_error('Unable to find dataset: '+vals[i]);
+			process.exit(-1);	
+		}
+	}
+}
+
+function valid_pipeline(name) {
+	if (name=='all') return true;
+	for (var i in pipelines) {
+		if (pipelines[i].name==name) return true;
+	}
+	return false;
+}
+
+function valid_dataset(name) {
+	if (name=='all') return true;
+	for (var i in datasets) {
+		if (datasets[i].name==name) return true;
+	}
+	return false;
+}

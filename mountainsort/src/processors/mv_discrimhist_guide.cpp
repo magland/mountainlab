@@ -24,7 +24,7 @@ struct discrimhist_guide_data_comparer {
 /// TODO parallelize mv_distrimhist
 
 //void get_discrimhist_guide_data(QVector<double>& ret1, QVector<double>& ret2, const DiskReadMda& timeseries, const DiskReadMda& firings, int k1, int k2, int clip_size);
-Mda compute_distance_matrix(DiskReadMda timeseries, DiskReadMda firings, mv_discrimhist_guide_opts opts);
+Mda compute_distance_matrix(DiskReadMda32 timeseries, DiskReadMda firings, mv_discrimhist_guide_opts opts);
 void get_pairs_to_compare(QVector<int>& ret_k1, QVector<int>& ret_k2, const Mda& distance_matrix, int num_histograms, QSet<int> clusters_to_exclude);
 double compute_separation_score(const QVector<double>& data1, const QVector<double>& data2);
 
@@ -33,7 +33,7 @@ bool mv_discrimhist_guide(QString timeseries_path, QString firings_path, QString
     DiskReadMda32 timeseries(timeseries_path);
     DiskReadMda firings(firings_path);
 
-    Mda distance_matrix = compute_distance_matrix(DiskReadMda(timeseries_path), DiskReadMda(firings_path), opts);
+    Mda distance_matrix = compute_distance_matrix(DiskReadMda32(timeseries_path), DiskReadMda(firings_path), opts);
     QVector<int> k1s, k2s;
     get_pairs_to_compare(k1s, k2s, distance_matrix, opts.num_histograms * 2, opts.clusters_to_exclude); //get more than we need to be reduced later after sorting
 
@@ -132,7 +132,7 @@ void get_discrimhist_guide_data(QVector<double>& ret1, QVector<double>& ret2, co
 }
 */
 
-double compute_distance(int N, double* ptr1, double* ptr2)
+double compute_distance(int N, float* ptr1, float* ptr2)
 {
     double sumsqr = 0;
     for (int i = 0; i < N; i++) {
@@ -142,12 +142,12 @@ double compute_distance(int N, double* ptr1, double* ptr2)
     return sqrt(sumsqr);
 }
 
-bool is_zero(const Mda& X)
+bool is_zero(const Mda32& X)
 {
     return ((X.minimum() == 0) && (X.maximum() == 0));
 }
 
-Mda compute_distance_matrix(DiskReadMda timeseries, DiskReadMda firings, mv_discrimhist_guide_opts opts)
+Mda compute_distance_matrix(DiskReadMda32 timeseries, DiskReadMda firings, mv_discrimhist_guide_opts opts)
 {
     QVector<double> times;
     QVector<int> labels;
@@ -155,17 +155,17 @@ Mda compute_distance_matrix(DiskReadMda timeseries, DiskReadMda firings, mv_disc
         times << firings.value(1, i);
         labels << (int)firings.value(2, i);
     }
-    Mda X = compute_templates_0(timeseries, times, labels, opts.clip_size);
+    Mda32 X = compute_templates_0(timeseries, times, labels, opts.clip_size);
     int M = X.N1();
     int T = X.N2();
     int K = X.N3();
 
     Mda ret(K, K);
     for (int k1 = 0; k1 < K; k1++) {
-        Mda tmp1;
+        Mda32 tmp1;
         X.getChunk(tmp1, 0, 0, k1, M, T, 1);
         for (int k2 = 0; k2 < K; k2++) {
-            Mda tmp2;
+            Mda32 tmp2;
             X.getChunk(tmp2, 0, 0, k2, M, T, 1);
             double dist = compute_distance(M * T, tmp1.dataPtr(), tmp2.dataPtr());
             if ((is_zero(tmp1)) || (is_zero(tmp2))) {

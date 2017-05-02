@@ -20,7 +20,7 @@ bool compute_detectability_scores(QString timeseries_path, QString firings_path,
 
     /// TODO figure out what is the bottleneck and try to speed it up
 
-    DiskReadMda timeseries;
+    DiskReadMda32 timeseries;
     timeseries.setPath(timeseries_path);
     printf("reading firings array.\n");
     Mda firings;
@@ -58,8 +58,8 @@ bool compute_detectability_scores(QString timeseries_path, QString firings_path,
         inds_k = find_label_inds(labels, k); //find the indices corresonding to this cluster
 
         if (inds_k.count() > 0) { //if the cluster is non-empty
-            Mda clips_k;
-            Mda noise_shape;
+            Mda32 clips_k;
+            Mda32 noise_shape;
             int channel;
 #pragma omp critical
             {
@@ -144,12 +144,12 @@ QVector<int> find_label_inds(const QVector<int>& labels, int k)
     return ret;
 }
 
-Mda get_subclips(Mda& clips, const QList<int>& inds)
+Mda32 get_subclips(Mda32& clips, const QList<int>& inds)
 {
     int M = clips.N1();
     int T = clips.N2();
     int L2 = inds.count();
-    Mda ret;
+    Mda32 ret;
     ret.allocate(M, T, L2);
     for (int i = 0; i < L2; i++) {
         int aaa = M * T * i;
@@ -253,7 +253,7 @@ QVector<double> randsample_with_replacement(int N, int K)
     return ret;
 }
 
-Mda estimate_noise_shape(DiskReadMda& X, int T, int ch)
+Mda32 estimate_noise_shape(DiskReadMda32& X, int T, int ch)
 {
     // Computes the expected shape of the template in a noise cluster
     // which may be considered as a row in the noise covariance matrix
@@ -269,22 +269,22 @@ Mda estimate_noise_shape(DiskReadMda& X, int T, int ch)
     QVector<double> rand_times = randsample_with_replacement(N - 2 * T, num_rand_times);
     for (int i = 0; i < rand_times.count(); i++)
         rand_times[i] += T;
-    Mda rand_clips = extract_clips(X, rand_times, T);
+    Mda32 rand_clips = extract_clips(X, rand_times, T);
     QVector<double> peaks;
     for (int i = 0; i < rand_times.count(); i++) {
         peaks << rand_clips.get(ch, Tmid, i);
     }
-    Mda noise_shape;
-    noise_shape.allocate(M, T);
-    double* noise_shape_ptr = noise_shape.dataPtr();
-    double* rand_clips_ptr = rand_clips.dataPtr();
+
+    Mda noise_shape_0(M, T);
+    double* noise_shape_0_ptr = noise_shape_0.dataPtr();
+    float* rand_clips_ptr = rand_clips.dataPtr();
     int bbb = 0;
     for (int i = 0; i < rand_times.count(); i++) {
         if (fabs(peaks[i]) <= 2) { //focus on noise clips (where amplitude is low)
             int aaa = 0;
             for (int t = 0; t < T; t++) {
                 for (int m = 0; m < M; m++) {
-                    noise_shape_ptr[aaa] += peaks[i] * rand_clips_ptr[bbb];
+                    noise_shape_0_ptr[aaa] += peaks[i] * rand_clips_ptr[bbb];
                     aaa++;
                     bbb++;
                 }
@@ -293,25 +293,30 @@ Mda estimate_noise_shape(DiskReadMda& X, int T, int ch)
         else
             bbb += M * T; //important and tricky!!!
     }
-    double noise_shape_norm = 0;
+    double noise_shape_0_norm = 0;
     for (int t = 0; t < T; t++) {
         for (int m = 0; m < M; m++) {
-            double val = noise_shape.get(m, t);
-            noise_shape_norm += val * val;
+            double val = noise_shape_0.get(m, t);
+            noise_shape_0_norm += val * val;
         }
     }
-    noise_shape_norm = sqrt(noise_shape_norm);
-    if (noise_shape_norm) {
+    noise_shape_0_norm = sqrt(noise_shape_0_norm);
+    if (!noise_shape_0_norm)
+        noise_shape_0_norm = 1;
+
+    Mda32 noise_shape;
+    noise_shape.allocate(M, T);
+    {
         for (int t = 0; t < T; t++) {
             for (int m = 0; m < M; m++) {
-                noise_shape.set(noise_shape.get(m, t) / noise_shape_norm, m, t);
+                noise_shape.set(noise_shape_0.get(m, t) / noise_shape_0_norm, m, t);
             }
         }
     }
     return noise_shape;
 }
 
-Mda compute_features(Mda& clips, int num_features)
+Mda compute_features(Mda32& clips, int num_features)
 {
     int M = clips.N1();
     int T = clips.N2();
@@ -390,12 +395,12 @@ void compute_geometric_median(int M, int N, double* output, double* input, int n
     free(weights);
 }
 
-Mda compute_geometric_median_template(Mda& clips)
+Mda32 compute_geometric_median_template(Mda32& clips)
 {
     int M = clips.N1();
     int T = clips.N2();
     int L = clips.N3();
-    Mda ret;
+    Mda32 ret;
     ret.allocate(M, T);
     if (L == 0)
         return ret;
@@ -422,11 +427,11 @@ Mda compute_geometric_median_template(Mda& clips)
         if (dists[i] <= dist_cutoff)
             inds << i;
     }
-    Mda subclips = get_subclips(clips, inds);
+    Mda32 subclips = get_subclips(clips, inds);
     return compute_mean_clip(subclips);
 }
 
-double compute_template_ip(Mda& T1, Mda& T2)
+double compute_template_ip(Mda32& T1, Mda32& T2)
 {
     double ip = 0;
     for (int t = 0; t < T1.N2(); t++) {
@@ -437,12 +442,12 @@ double compute_template_ip(Mda& T1, Mda& T2)
     return ip;
 }
 
-double compute_template_norm(Mda& T)
+double compute_template_norm(Mda32& T)
 {
     return sqrt(compute_template_ip(T, T));
 }
 
-QList<Subcluster> compute_subcluster_detectability_scores(Mda& noise_shape, Mda& clips, int channel, const Define_Shells_Opts& opts)
+QList<Subcluster> compute_subcluster_detectability_scores(Mda32& noise_shape, Mda32& clips, int channel, const Define_Shells_Opts& opts)
 {
     QTime timer;
     timer.start();
@@ -462,11 +467,11 @@ QList<Subcluster> compute_subcluster_detectability_scores(Mda& noise_shape, Mda&
     QList<Subcluster> subclusters;
     for (int s = 0; s < shells.count(); s++) {
         QList<int> inds_s = shells[s].inds;
-        Mda clips_s = get_subclips(clips, inds_s);
+        Mda32 clips_s = get_subclips(clips, inds_s);
         //Mda subtemplate=compute_geometric_median_template(clips_s);
-        Mda subtemplate = compute_mean_clip(clips_s);
+        Mda32 subtemplate = compute_mean_clip(clips_s);
         double ip = compute_template_ip(noise_shape, subtemplate);
-        Mda subtemplate_resid;
+        Mda32 subtemplate_resid;
         subtemplate_resid.allocate(M, T);
         for (int t = 0; t < T; t++) {
             for (int m = 0; m < M; m++) {

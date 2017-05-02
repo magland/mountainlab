@@ -485,9 +485,18 @@ double MLCompute::min(bigint N, const double* X)
 QList<int> MLUtil::stringListToIntList(const QStringList& list)
 {
     QList<int> ret;
-    ret.reserve(list.size());
     foreach (QString str, list) {
-        ret << str.toInt();
+        if (str.contains("-")) {
+            QStringList vals = str.split("-");
+            int i1 = vals.value(0).toInt();
+            int i2 = vals.value(1).toInt();
+            for (int i = i1; i <= i2; i++) {
+                ret << i;
+            }
+        }
+        else {
+            ret << str.toInt();
+        }
     }
     return ret;
 }
@@ -958,6 +967,8 @@ bool MLUtil::matchesFastChecksum(QString path, QString fcs)
 
 double MLCompute::correlation(bigint N, const float* X1, const float* X2)
 {
+    if (N <= 1)
+        return 0;
     double mean1 = mean(N, X1);
     double stdev1 = stdev(N, X1);
     double mean2 = mean(N, X2);
@@ -970,7 +981,7 @@ double MLCompute::correlation(bigint N, const float* X1, const float* X2)
         Y1[i] = (X1[i] - mean1) / stdev1;
         Y2[i] = (X2[i] - mean2) / stdev2;
     }
-    return dotProduct(Y1, Y2);
+    return dotProduct(Y1, Y2) / (N - 1);
 }
 
 double MLCompute::stdev(bigint N, const float* X)

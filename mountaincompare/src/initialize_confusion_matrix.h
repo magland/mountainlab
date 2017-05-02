@@ -38,6 +38,7 @@ public:
         params["match_matching_offset"] = 30;
         if (relabel)
             params["relabel_firings2"] = "true";
+        //params["_force_run"] = "true";
         MPR.setInputParameters(params);
         confusion_matrix = MPR.makeOutputFilePath("confusion_matrix_out");
         matched_firings = MPR.makeOutputFilePath("matched_firings_out");

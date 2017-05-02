@@ -20,7 +20,7 @@ class MVClipsViewPrivate {
 public:
     MVClipsView* q;
 
-    DiskReadMda m_clips;
+    DiskReadMda32 m_clips;
     //QVector<double> m_times;
     //QVector<int> m_labels;
     MVContext* m_context;
@@ -49,7 +49,7 @@ MVClipsView::~MVClipsView()
     delete d;
 }
 
-void MVClipsView::setClips(const DiskReadMda& clips)
+void MVClipsView::setClips(const DiskReadMda32& clips)
 {
     d->m_clips = clips;
     d->m_clip_index_offset = 0;
@@ -109,7 +109,7 @@ QPointF MVClipsViewPrivate::coord2pix(const mvclipsview_coord& C)
 
 void MVClipsViewPrivate::auto_set_vert_scale_factor()
 {
-    Mda X;
+    Mda32 X;
     if (!m_clips.readChunk(X, 0, 0, 0, m_clips.N1(), m_clips.N2(), m_clips.N3())) {
         qWarning() << "Unable to read chunk of clips in auto_set_vert_scale_factor of clips view.";
         return;

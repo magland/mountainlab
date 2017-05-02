@@ -1,0 +1,98 @@
+function main(params) {
+	set_default_parameters(params,{
+		firings_file_name:'firings_true.mda'
+	});
+
+	var inpath=params.inpath;
+	var outpath=params.outpath;
+
+	//bandpass filter each session
+	var filt;
+	var raw=inpath+'/raw.mda.prv';
+	var firings_true;
+	if (file_exists(inpath+'/'+params.firings_file_name+'.prv'))
+		firings_true=inpath+'/'+params.firings_file_name+'.prv';
+	else
+		firings_true=inpath+'/'+params.firings_file_name;
+
+	// Write the output
+	if (file_exists(inpath+'/waveforms_true.mda.prv'))
+		write_prv(inpath+'/waveforms_true.mda.prv',params.outpath+'/waveforms.mda.prv');	
+	else if (file_exists(inpath+'/waveforms_true.mda'))
+		write_file(inpath+'/waveforms_true.mda',params.outpath+'/waveforms.mda');	
+
+	write_prv(firings_true,params.outpath+'/firings.mda.prv');	
+	write_prv(raw,params.outpath+'/raw.mda.prv');
+
+	run_pipeline();
+}
+
+function run_pipeline() {
+	_MP2.runPipeline();
+}
+
+function Process(processor_name,inputs,parameters,outputs) {
+	if (!parameters) parameters={};
+	if (!outputs) outputs=''; // empty outputs means that they will be created as temporary files and the return object will contain the paths to these temporary files
+	var ret=_MP2.addProcess(
+		processor_name,
+		JSON.stringify(inputs),
+		JSON.stringify(parameters),
+		JSON.stringify(outputs)
+	);
+	return JSON.parse(ret);
+}
+
+function setNumThreads(num_threads) {
+	_MP2.setNumThreads(num_threads);
+}
+
+function write_file(input,output) {
+	_MP2.addCopyFile(input,output);
+	/*
+	_MP2.addProcess(
+		'copy',
+		JSON.stringify({input:input}),
+		JSON.stringify({}),
+		JSON.stringify({output:output})
+	);
+	*/
+}
+
+function write_prv(input,output) {
+	_MP2.addPrv(input,output);
+}
+
+function remove_file(path) {
+	_MP2.removeFile(path);
+}
+
+function clone(obj) {
+	return JSON.parse(JSON.stringify(obj));
+}
+
+var console={
+	log:function(msg) {_MP2.log(msg);},
+	err:function(msg) {_MP2.log('Pipeline error: '+msg);}
+};
+
+function set_default_parameters(params,defaults) {
+	for (var pname in defaults) {
+		if (!(pname in params)) {
+			params[pname]=defaults[pname];
+		}
+	}
+}
+
+
+function file_exists(path) {
+	return _MP2.fileExists(path);
+}
+
+function dir(path) {
+	return JSON.parse(_MP2.dir(path));
+}
+
+function mkdir(path) {
+	_MP2.mkdir(path);
+}

@@ -77,7 +77,7 @@ public:
 
     bool checkParameters(const QString& processor_name, const QVariantMap& parameters);
     void setDefaultParameters(const QString& processor_name, QVariantMap& parameters);
-    bool processAlreadyCompleted(const QString& processor_name, const QVariantMap& parameters);
+    bool processAlreadyCompleted(const QString& processor_name, const QVariantMap& parameters, bool allow_rprv_inputs = true, bool allow_rprv_outputs = false);
     QString startProcess(const QString& processor_name, const QVariantMap& parameters, const RequestProcessResources& RPR, bool exec_mode, bool preserve_tempdir); //returns the process id/handle (a random string)
     bool waitForFinished(const QString& process_id, int parent_pid);
     MLProcessInfo processInfo(const QString& id);
@@ -87,6 +87,8 @@ public:
     QStringList allProcessIds() const;
 
     bool isFinished(const QString& id);
+
+    void cleanUpCompletedProcessRecords();
 
     static ProcessManager* globalInstance();
 

@@ -31,7 +31,7 @@
 class MVSpikeSprayComputer {
 public:
     //input
-    DiskReadMda timeseries;
+    DiskReadMda32 timeseries;
     DiskReadMda firings;
     QString mlproxy_url;
     QSet<int> labels_to_use;
@@ -111,7 +111,7 @@ MVSpikeSprayView::MVSpikeSprayView(MVAbstractContext* context)
     d->m_context = c;
 
     recalculateOnOptionChanged("clip_size");
-    recalculateOnOptionChanged("timeseries_for_spikespray");
+    //recalculateOnOptionChanged("timeseries_for_spikespray");
     recalculateOn(c, SIGNAL(clusterMergeChanged()));
     recalculateOn(c, SIGNAL(timeseriesNamesChanged()));
     recalculateOn(c, SIGNAL(visibleChannelsChanged()));
@@ -137,6 +137,7 @@ MVSpikeSprayView::MVSpikeSprayView(MVAbstractContext* context)
     ActionFactory::addToToolbar(ActionFactory::ActionType::ZoomInVertical, this, SLOT(slot_vertical_zoom_in()));
     ActionFactory::addToToolbar(ActionFactory::ActionType::ZoomOutVertical, this, SLOT(slot_vertical_zoom_out()));
 
+    /*
     {
         QAction* A = new QAction("<-col", this);
         A->setProperty("action_type", "toolbar");
@@ -149,6 +150,7 @@ MVSpikeSprayView::MVSpikeSprayView(MVAbstractContext* context)
         QObject::connect(A, SIGNAL(triggered(bool)), this, SLOT(slot_shift_colors_right()));
         this->addAction(A);
     }
+    */
 
     {
         QAction* A = new QAction("Export static view", this);
@@ -223,9 +225,10 @@ void MVSpikeSprayView::setLabelsToUse(const QSet<int>& labels_to_use)
 
 void MVSpikeSprayView::prepareCalculation()
 {
-    QString timeseries_name = d->m_context->option("timeseries_for_spikespray").toString();
-    if (timeseries_name.isEmpty())
-        timeseries_name = d->m_context->currentTimeseriesName();
+    //QString timeseries_name = d->m_context->option("timeseries_for_spikespray").toString();
+    //if (timeseries_name.isEmpty())
+    //    timeseries_name = d->m_context->currentTimeseriesName();
+    QString timeseries_name = d->m_context->currentTimeseriesName();
     this->setCalculatingMessage(QString("Calculating using %1...").arg(timeseries_name));
     d->m_labels_to_render.clear();
     d->m_computer.mlproxy_url = d->m_context->mlProxyUrl();
@@ -362,7 +365,7 @@ void MVSpikeSprayView::slot_shift_colors_left(int step)
     int shift = c->option("cluster_color_index_shift", 0).toInt();
     shift += step;
     c->setOption("cluster_color_index_shift", shift);
-    //this->onCalculationFinished();
+    this->onCalculationFinished();
 }
 
 void MVSpikeSprayView::slot_shift_colors_right()

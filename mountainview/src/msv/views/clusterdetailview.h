@@ -54,7 +54,7 @@ signals:
     //void signalTemplateActivated();
 private slots:
     //void slot_context_menu(const QPoint& pos);
-    void slot_export_waveforms();
+    //void slot_export_waveforms();
     void slot_export_image();
     void slot_toggle_stdev_shading();
     void slot_zoom_in();
@@ -64,6 +64,8 @@ private slots:
     void slot_export_static_view();
     void slot_update_sort_order();
     void slot_view_properties();
+    void slot_export_template_waveforms();
+    void slot_export_template_waveform_stdevs();
 
 private:
     ClusterDetailViewPrivate* d;

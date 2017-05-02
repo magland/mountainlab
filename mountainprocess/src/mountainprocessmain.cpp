@@ -185,6 +185,7 @@ int main(int argc, char* argv[])
             QString tmp_fname = CacheManager::globalInstance()->makeLocalFile() + ".prvs";
             QString json = QJsonDocument(missing_prvs).toJson();
             TextFile::write(tmp_fname, json);
+            CacheManager::globalInstance()->setTemporaryFileDuration(tmp_fname, 600);
             QString cmd = QString("prv-gui %1").arg(tmp_fname);
             QProcess::startDetached(cmd);
             return -1;
@@ -277,6 +278,9 @@ int main(int argc, char* argv[])
         }
     }
     else if ((arg1 == "run-process") || (arg1 == "exec-process")) { //Run a process synchronously
+        //clean up expired files
+        CacheManager::globalInstance()->removeExpiredFiles();
+
         bool exec_mode = (arg1 == "exec-process");
         //printf("Initializing process manager...\n");
         if (!initialize_process_manager()) { // load the processor plugins etc
@@ -384,6 +388,9 @@ int main(int argc, char* argv[])
         return ret; //returns exit code 0 if okay
     }
     else if (arg1 == "run-script") { // run a script synchronously (although note that individual processes will be queued (unless --_nodaemon is specified), but the script will wait for them to complete before exiting)
+        //clean up expired files
+        CacheManager::globalInstance()->removeExpiredFiles();
+
         QString daemon_id = qgetenv("MP_DAEMON_ID");
         if (!CLP.named_parameters.contains("_nodaemon")) {
             if (daemon_id.isEmpty()) {
@@ -409,6 +416,8 @@ int main(int argc, char* argv[])
             //log_end();
             return -1;
         }
+
+        ProcessManager::globalInstance()->cleanUpCompletedProcessRecords(); //those .json files in completed_process tmp directory
 
         QString output_fname = CLP.named_parameters.value("_script_output").toString(); //maybe the user or framework specified where output is to be saved
         if (!output_fname.isEmpty()) {
@@ -548,6 +557,9 @@ int main(int argc, char* argv[])
         return 0;
     }
     else if (arg1 == "queue-script") { //Queue a script -- to be executed when resources are available
+        //clean up expired files
+        CacheManager::globalInstance()->removeExpiredFiles();
+
         QString daemon_id = qgetenv("MP_DAEMON_ID");
         if (daemon_id.isEmpty()) {
             printf("\nCANNOT QUEUE SCRIPT: No daemon has been specified.\n");
@@ -566,6 +578,9 @@ int main(int argc, char* argv[])
         }
     }
     else if (arg1 == "queue-process") {
+        //clean up expired files
+        CacheManager::globalInstance()->removeExpiredFiles();
+
         QString daemon_id = qgetenv("MP_DAEMON_ID");
         if (daemon_id.isEmpty()) {
             printf("\nCANNOT QUEUE PROCESS: No daemon has been specified.\n");
@@ -653,6 +668,9 @@ int main(int argc, char* argv[])
             printf("%s\n", msg.toUtf8().data());
             set_default_daemon_id(daemon_id);
         }
+        //clean up expired files
+        CacheManager::globalInstance()->removeExpiredFiles();
+
         /*
         bool user_wants_to_set_as_default = false;
         while (1) {
@@ -771,6 +789,9 @@ int main(int argc, char* argv[])
             exit(-1);
         }
         qputenv("MP_DAEMON_ID", daemon_id.toUtf8().data());
+
+        //clean up expired files
+        CacheManager::globalInstance()->removeExpiredFiles();
 
         MPDaemonClient client;
         if (!client.stop() || !client.start())

@@ -15,6 +15,8 @@
 #include <math.h>
 #include <mvcontext.h>
 #include "mountainprocessrunner.h"
+#include <QDir>
+#include <QFileDialog>
 
 /// TODO: (MEDIUM) control brightness in 3D density view
 
@@ -22,7 +24,7 @@ class MVClusterWidgetComputer {
 public:
     //input
     QString mlproxy_url;
-    DiskReadMda timeseries;
+    DiskReadMda32 timeseries;
     DiskReadMda firings;
     int clip_size;
     QList<int> labels_to_use;
@@ -41,12 +43,12 @@ public:
 class ClipsViewThread : public QThread {
 public:
     //input
-    DiskReadMda timeseries;
+    DiskReadMda32 timeseries;
     QVector<double> times;
     int clip_size;
 
     //output
-    DiskReadMda clips;
+    DiskReadMda32 clips;
 
     void run();
 };
@@ -58,6 +60,7 @@ public:
     MVClipsView* m_clips_view;
     QLabel* m_info_bar;
     Mda m_data;
+    QVector<int> m_labels;
     QList<int> m_labels_to_use;
     MVClusterWidgetComputer m_computer;
     QString m_feature_mode;
@@ -105,6 +108,7 @@ MVClusterWidget::MVClusterWidget(MVAbstractContext* context)
     this->setLayout(mainlayout);
 
     QHBoxLayout* bottom_panel = new QHBoxLayout;
+    /*
     {
         QCheckBox* CB = new QCheckBox;
         CB->setText("Clip View");
@@ -112,6 +116,7 @@ MVClusterWidget::MVClusterWidget(MVAbstractContext* context)
         CB->setChecked(true);
         bottom_panel->addWidget(CB);
     }
+    */
     {
         QCheckBox* CB = new QCheckBox;
         CB->setText("Density Plot");
@@ -199,6 +204,18 @@ MVClusterWidget::MVClusterWidget(MVAbstractContext* context)
         QObject::connect(A, SIGNAL(triggered(bool)), this, SLOT(slot_shift_colors_right()));
         this->addAction(A);
     }
+    {
+        QAction* A = new QAction("Export features", this);
+        A->setProperty("action_type", "");
+        QObject::connect(A, SIGNAL(triggered(bool)), this, SLOT(slot_export_features()));
+        this->addAction(A);
+    }
+    {
+        QAction* A = new QAction("Export labels", this);
+        A->setProperty("action_type", "");
+        QObject::connect(A, SIGNAL(triggered(bool)), this, SLOT(slot_export_labels()));
+        this->addAction(A);
+    }
 }
 
 MVClusterWidget::~MVClusterWidget()
@@ -273,6 +290,7 @@ void MVClusterWidget::setTimes(const QVector<double>& times)
 
 void MVClusterWidget::setLabels(const QVector<int>& labels)
 {
+    d->m_labels = labels;
     foreach (MVClusterView* V, d->m_views) {
         V->setLabels(labels);
     }
@@ -386,6 +404,32 @@ void MVClusterWidget::slot_shift_colors_right()
     slot_shift_colors_left(-1);
 }
 
+void MVClusterWidget::slot_export_features()
+{
+    QString default_dir = QDir::currentPath();
+    QString fname = QFileDialog::getSaveFileName(this, "Export features", default_dir, "*.mda");
+    if (fname.isEmpty())
+        return;
+    if (!d->m_data.write32(fname)) {
+        qWarning() << "Problem writing file: " + fname;
+    }
+}
+
+void MVClusterWidget::slot_export_labels()
+{
+    QString default_dir = QDir::currentPath();
+    QString fname = QFileDialog::getSaveFileName(this, "Export labels", default_dir, "*.mda");
+    if (fname.isEmpty())
+        return;
+    Mda LL(1, d->m_labels.count());
+    for (bigint i = 0; i < d->m_labels.count(); i++) {
+        LL.set(d->m_labels[i], i);
+    }
+    if (!LL.write32(fname)) {
+        qWarning() << "Problem writing file: " + fname;
+    }
+}
+
 void MVClusterWidgetPrivate::connect_view(MVClusterView* V)
 {
     QObject::connect(V, SIGNAL(currentEventChanged()), q, SLOT(slot_view_current_event_changed()));
@@ -404,7 +448,7 @@ void MVClusterWidgetPrivate::update_clips_view()
         QVector<double> times;
         times << evt.time;
 
-        m_clips_view->setClips(Mda());
+        m_clips_view->setClips(Mda32());
         if (m_clips_view_thread.isRunning()) {
             m_clips_view_thread.requestInterruption();
             m_clips_view_thread.wait();
@@ -417,7 +461,7 @@ void MVClusterWidgetPrivate::update_clips_view()
         m_clips_view_thread.start();
     }
     else {
-        m_clips_view->setClips(Mda());
+        m_clips_view->setClips(Mda32());
     }
     //m_info_bar->setText(info_txt);
 }
@@ -608,12 +652,12 @@ QString MVChannelFeaturesFactory::id() const
 
 QString MVChannelFeaturesFactory::name() const
 {
-    return tr("Channel Features");
+    return tr("Peak amplitude features");
 }
 
 QString MVChannelFeaturesFactory::title() const
 {
-    return tr("Ch. features");
+    return tr("Peak amp features");
 }
 
 MVAbstractView* MVChannelFeaturesFactory::createView(MVAbstractContext* context)

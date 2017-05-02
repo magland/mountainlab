@@ -196,11 +196,13 @@ public:
         }
         return true;
     }
-    bool write_to_text_file(const QString& path) const
+    bool write_to_text_file(const QString& path, char sep) const
     {
+        /*
         char sep = ' ';
         if (path.endsWith(".csv"))
             sep = ',';
+            */
         int max_num_entries = 1e6;
         if (N1() * N2() == max_num_entries) {
             qWarning() << "mda is too large to write text file";

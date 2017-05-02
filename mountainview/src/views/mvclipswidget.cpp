@@ -25,13 +25,13 @@ class MVClipsWidgetComputer {
 public:
     //input
     DiskReadMda firings;
-    DiskReadMda timeseries;
+    DiskReadMda32 timeseries;
     QString mlproxy_url;
     int clip_size;
     QList<int> labels_to_use;
 
     //output
-    DiskReadMda clips;
+    DiskReadMda32 clips;
     QVector<double> times;
     QVector<int> labels;
 
@@ -110,7 +110,7 @@ void MVClipsWidget::onCalculationFinished()
 
     TaskProgress task("MVClipsWidget::onCalculationFinished");
     task.log(QString("%1x%2x%3").arg(d->m_computer.clips.N1()).arg(d->m_computer.clips.N2()).arg(d->m_computer.clips.N3()));
-    DiskReadMda clips = d->m_computer.clips.reshaped(d->m_computer.clips.N1(), d->m_computer.clips.N2() * d->m_computer.clips.N3());
+    DiskReadMda32 clips = d->m_computer.clips.reshaped(d->m_computer.clips.N1(), d->m_computer.clips.N2() * d->m_computer.clips.N3());
     d->m_view_context.copySettingsFrom(c);
     d->m_view_context.addTimeseries("clips", clips);
     d->m_view_context.setCurrentTimeseriesName("clips");
@@ -205,7 +205,7 @@ void MVClipsWidgetComputer::compute()
         labels << firings_out.value(2, j);
     }
     task.log("Reading: " + clips_path);
-    DiskReadMda CC(clips_path);
+    DiskReadMda32 CC(clips_path);
     //CC.setRemoteDataType("float32_q8"); //to save download time
     task.log(QString("CC: %1 x %2 x %3, clip_size=%4").arg(CC.N1()).arg(CC.N2()).arg(CC.N3()).arg(clip_size));
     clips = CC;

@@ -1,0 +1,158 @@
+#!/usr/bin/env nodejs
+
+var child_process=require('child_process');
+
+function print_usage() {
+	console.log ('kron-remove-intermediate-files [pipeline_names] [dataset_names] --outpath=[output(default)] [--output-to-dataset-folder]');
+}
+
+var fs=require('fs');
+var common=require(__dirname+'/common.node.js');
+
+var CLP=new common.CLParams(process.argv);
+
+var pipnames=CLP.unnamedParameters[0];
+var dsnames=CLP.unnamedParameters[1];
+var outpath=CLP.namedParameters.outpath||'output';
+var output_to_dataset_folder=('output-to-dataset-folder' in CLP.namedParameters);
+var pipelines_path='pipelines.txt';
+var datasets_path='datasets.txt';
+
+var interface=common.get_interface(); //for now it is hard-coded for spike sorting
+
+var arg1=CLP.unnamedParameters[0]||'';
+if (ends_with(arg1,'.json')) {
+	var json=JSON.parse(common.read_text_file(arg1));
+	if (!json.dataset) {
+		console.error('Missing object: dataset');
+		process.exit(-1);
+	}
+	if (!json.pipeline) {
+		console.error('Missing object: pipeline');
+		process.exit(-1);
+	}
+	var outpath0=get_output_directory(json.pipeline.name,json.dataset.name);
+	remove_intermediate_files_for_output_directory(outpath0,function() {
+		//done
+	});
+}
+else {
+	if ((!pipnames)||(!dsnames)||(!outpath)||(!pipelines_path)||(!datasets_path)) {
+		print_usage();
+		process.exit(-1);
+	}
+	var pipelines=common.read_pipelines_from_text_file(pipelines_path);
+	var datasets=common.read_datasets_from_text_file(datasets_path);
+
+	check_pipelines(pipnames);
+	check_datasets(dsnames);
+
+	common.foreach(pipelines,{},function(p,obj,cb1) {
+		if (common.contains_pipeline(pipnames,pipelines[p])) {
+			common.foreach(datasets,{},function(d,obj,cb2) {
+				if (common.contains_ds(dsnames,datasets[d])) {
+					var outpath0=get_output_directory(pipelines[p].name,datasets[d].name);
+					remove_intermediate_files_for_output_directory(outpath0,function() {
+						cb2();
+					});
+				}
+				else cb2();
+			},function() {
+				cb1();
+			});
+		}
+		else cb1();
+	},function() {
+		//done
+	});
+}
+
+/*
+common.wait_for_system_calls_to_finish(function() {
+
+});
+*/
+
+function print_error(str) {
+	console.log(str);
+}
+
+function valid_pipeline(name) {
+	if (name=='all') return true;
+	for (var i in pipelines) {
+		if (pipelines[i].name==name) return true;
+	}
+	return false;
+}
+
+function valid_dataset(name) {
+	if (name=='all') return true;
+	for (var i in datasets) {
+		if (datasets[i].name==name) return true;
+	}
+	return false;
+}
+
+function check_pipelines(pipnames) {
+	var vals=pipnames.split(',');
+	for (var i in vals) {
+		if (!valid_pipeline(vals[i])) {
+			print_error('Unable to find pipeline: '+vals[i]);
+			process.exit(-1);	
+		}
+	}
+}
+
+function check_datasets(dsnames) {
+	var vals=dsnames.split(',');
+	for (var i in vals) {
+		if (!valid_dataset(vals[i])) {
+			print_error('Unable to find dataset: '+vals[i]);
+			process.exit(-1);	
+		}
+	}
+}
+
+function get_output_directory(pipeline_name,dataset_name) {
+	return outpath+'/'+pipeline_name+'--'+dataset_name;
+}
+
+function remove_intermediate_files_for_output_directory(outpath,callback) {
+	console.log('Removing intermediate files for output directory: '+outpath);
+	var fnames=['filt.mda','pre.mda'];
+	common.foreach(fnames,{},function(i,fname0,cb1) {
+		var fname=outpath+'/'+fname0;
+		if (fs.existsSync(fname)) {
+			console.log('Removing file: '+fname);
+			fs.unlinkSync();
+		}
+		if (fs.existsSync(fname+'.prv')) {
+			console.log('Locating file: '+fname+'.prv');
+			prv_locate(fname+'.prv',function(fname2) {
+				if (fname2) {
+					console.log('Removing file: '+fname2);
+					fs.unlinkSync(fname2);
+				}
+				cb1();
+			});
+		}
+		else {
+			cb1();
+		}
+	},function() {
+		callback();
+	});
+}
+
+function prv_locate(prv_fname,callback) {
+	var exe='prv';
+	var args=['locate',prv_fname];
+	common.make_system_call(exe,args,function(tmp) {
+		callback(tmp.stdout.trim());
+	});
+}
+
+function ends_with(str,suf) {
+	if (str.length<suf.length) return false;
+	return (str.slice(str.length-suf.length)==suf);
+}

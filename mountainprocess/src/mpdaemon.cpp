@@ -867,6 +867,7 @@ bool MountainProcessServer::launch_pript(QString pript_id)
         QString parameters_json = QJsonDocument(parameters).toJson();
         QString par_fname = CacheManager::globalInstance()->makeLocalFile(S->id + ".par", CacheManager::ShortTerm);
         TextFile::write(par_fname, parameters_json);
+        CacheManager::globalInstance()->setTemporaryFileDuration(par_fname, 600);
         args << par_fname;
     }
     else if (S->prtype == ProcessType) {
@@ -1347,7 +1348,9 @@ void MPDaemon::start_bash_command_and_kill_when_pid_is_gone(QProcess* qprocess, 
     }
     qprocess->setProgram("/bin/bash");
     qprocess->setArguments(QStringList(bash_script_fname));
-    manager->start(qprocess);
+    QSharedPointer<QProcess> pp = manager->start(qprocess);
+
+    CacheManager::globalInstance()->setTemporaryFileExpirePid(bash_script_fname, pp->processId());
 
     //qprocess->start("/bin/bash", QStringList(bash_script_fname));
 }

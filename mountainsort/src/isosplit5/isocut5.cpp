@@ -14,7 +14,7 @@ double compute_ks5(bigint* critical_range_min, bigint* critical_range_max, bigin
 void debug_print_array(bigint N, float* X);
 }
 
-void isocut5_mex(double* dipscore, double* cutpoint, bigint N, double* samples)
+void isocut5_mex(double* dipscore, double* cutpoint, int N, double* samples)
 {
     *dipscore = 0;
     *cutpoint = 0;

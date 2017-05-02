@@ -6,7 +6,7 @@ var os=require('os');
 exports.spec=function() {
 	var spec0={};
 	spec0.name='mountainsort.ms2_001';
-	spec0.version='0.23';
+	spec0.version='0.29';
 
 	spec0.inputs=[
         {name:"timeseries",description:"preprocessed timeseries (M x N)",optional:false},
@@ -493,10 +493,10 @@ exports.run=function(opts,callback) {
 	function STEP_consolidate_clusters(consolidate_clusters_callback) {
 		console.log ('-------------------- CONSOLIDATING CLUSTERS -------------------');
 		common.mp_exec_process('mountainsort.consolidate_clusters',
-			{clips:clips,labels:labels},
+			{timeseries:opts.timeseries,event_times:event_times,labels:labels},
 			{labels_out:labels2},
 			{
-				central_channel:central_channel2,
+				central_channel:opts.central_channel,
 				_request_num_threads:opts.num_threads
 			},
 			consolidate_clusters_callback
@@ -508,7 +508,7 @@ exports.run=function(opts,callback) {
 		common.mp_exec_process('mountainsort.create_firings',
 			{event_times:event_times,labels:labels2,amplitudes:(amplitudes||'')},
 			{firings_out:firings},
-			{central_channel:opts.central_channel||0,_request_num_threads:opts.num_threads},
+			{central_channel:opts.central_channel,_request_num_threads:opts.num_threads},
 			create_firings_callback
 		);	
 	}		

@@ -46,7 +46,7 @@ Mda compute_templates_0(const DiskReadMda& X, const QVector<double>& times, cons
     Mda templates(M, T, K);
     QList<int> counts;
     for (int k = 0; k < K; k++)
-        counts << k;
+        counts << 0;
     for (int i = 0; i < L; i++) {
         int k = labels[i];
         int t0 = (int)(times[i] + 0.5);
@@ -87,7 +87,7 @@ Mda32 compute_templates_0(const DiskReadMda32& X, const QVector<double>& times, 
     Mda32 templates(M, T, K);
     QList<int> counts;
     for (int k = 0; k < K; k++)
-        counts << k;
+        counts << 0;
     for (int i = 0; i < L; i++) {
         int k = labels[i];
         int t0 = (int)(times[i] + 0.5);
@@ -129,7 +129,7 @@ void compute_templates_stdevs(Mda& templates, Mda& stdevs, DiskReadMda& X, const
     Mda sumsqrs(M, T, K);
     QList<int> counts;
     for (int k = 0; k < K; k++)
-        counts << k;
+        counts << 0;
     for (int i = 0; i < L; i++) {
         int k = labels[i];
         int t0 = (int)(times[i] + 0.5);

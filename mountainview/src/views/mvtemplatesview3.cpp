@@ -29,7 +29,7 @@ class MVTemplatesView3Calculator {
 public:
     //input
     QString mlproxy_url;
-    DiskReadMda timeseries;
+    DiskReadMda32 timeseries;
     DiskReadMda firings;
     int clip_size;
 

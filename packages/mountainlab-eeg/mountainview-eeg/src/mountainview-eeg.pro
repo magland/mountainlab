@@ -7,10 +7,10 @@ QMAKE_CXXFLAGS += -Wno-reorder #qaccordion
 
 CONFIG -= app_bundle #Please apple, don't make a bundle today
 
+include(../../../../mvcommon/mvcommon.pri)
 include(../../../../mlcommon/mlcommon.pri)
 include(../../../../mlcommon/mda.pri)
 include(../../../../mlcommon/taskprogress.pri)
-include(../../../../mvcommon/mvcommon.pri)
 
 QT += widgets
 QT+=concurrent

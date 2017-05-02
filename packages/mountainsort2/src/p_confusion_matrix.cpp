@@ -44,6 +44,7 @@ bool p_confusion_matrix(QString firings1, QString firings2, QString confusion_ma
     }
 
     // Collect the list of events from firings1
+    printf("Collecting events...\n");
     QList<MFEvent> events1;
     {
         DiskReadMda F1(firings1);
@@ -56,6 +57,7 @@ bool p_confusion_matrix(QString firings1, QString firings2, QString confusion_ma
         }
     }
     // Collect the list of events from firings2
+    printf("Collecting events...\n");
     QList<MFEvent> events2;
     {
         DiskReadMda F2(firings2);
@@ -69,6 +71,7 @@ bool p_confusion_matrix(QString firings1, QString firings2, QString confusion_ma
     }
 
     // Sort the events by time
+    printf("Sorting events...\n");
     sort_events_by_time(events1);
     sort_events_by_time(events2);
 
@@ -77,6 +80,7 @@ bool p_confusion_matrix(QString firings1, QString firings2, QString confusion_ma
     int K2 = compute_max_label(events2);
 
     // Count up every pair that satisfies opts.max_matching_offset -- and I mean EVERY PAIR
+    printf("Counting all pairs...\n");
     bigint total_counts[K1 + 1][K2 + 1];
     {
         for (int k2 = 0; k2 < K2 + 1; k2++) {
@@ -104,6 +108,7 @@ bool p_confusion_matrix(QString firings1, QString firings2, QString confusion_ma
     }
 
     // Count up just the events in firings2, this will be used to normalize the match score -- but don't worry, the thing is still symmetric, see below
+    printf("Counting events in firings2...\n");
     bigint total_events2_counts[K2 + 1];
     for (int k2 = 0; k2 < K2 + 1; k2++) {
         total_events2_counts[k2] = 0;
@@ -114,6 +119,7 @@ bool p_confusion_matrix(QString firings1, QString firings2, QString confusion_ma
         }
     }
 
+    printf("Creating list of merged events...\n");
     // Create the list of matched events
     QList<MFMergeEvent> events3;
     {
@@ -172,6 +178,7 @@ bool p_confusion_matrix(QString firings1, QString firings2, QString confusion_ma
         }
     }
 
+    printf("Handling missing events...\n");
     //Now take care of all the events that did not get handled earlier ... they are unclassified
     for (bigint i1 = 0; i1 < events1.count(); i1++) {
         if (events1[i1].label > 0) { //this is how we check to see if it was not handled
@@ -195,10 +202,12 @@ bool p_confusion_matrix(QString firings1, QString firings2, QString confusion_ma
     }
 
     // Sort the matched events by time
+    printf("Sorting events...\n");
     sort_events_by_time(events3);
     bigint L = events3.count();
 
     // Create the confusion matrix
+    printf("Writing confusion matrix...\n");
     Mda confusion_matrix(K1 + 1, K2 + 1);
     {
         for (bigint i = 0; i < L; i++) {
@@ -211,11 +220,15 @@ bool p_confusion_matrix(QString firings1, QString firings2, QString confusion_ma
             confusion_matrix.setValue(confusion_matrix.value(a, b) + 1, a, b);
         }
     }
-    confusion_matrix.write64(confusion_matrix_out);
+    if (!confusion_matrix_out.isEmpty()) {
+        if (!confusion_matrix.write64(confusion_matrix_out))
+            return false;
+    }
 
     // Get the optimal label map
     Mda label_map(K1, 1);
     if ((!label_map_out.isEmpty()) || (opts.relabel_firings2)) {
+        printf("Writing label_map_out...\n");
         if (K1 > 0) {
             int assignment[K1];
             Mda matrix(K1, K2);
@@ -230,10 +243,14 @@ bool p_confusion_matrix(QString firings1, QString firings2, QString confusion_ma
                 label_map.setValue(assignment[i] + 1, i);
             }
         }
-        label_map.write64(label_map_out);
+        if (!label_map_out.isEmpty()) {
+            if (!label_map.write64(label_map_out))
+                return false;
+        }
     }
 
     if (opts.relabel_firings2) {
+        printf("Relabeling firings2...\n");
         Mda label_map_inv(K2, 1);
         for (int j = 1; j <= K1; j++) {
             if (label_map.value(j - 1) > 0) {
@@ -251,7 +268,8 @@ bool p_confusion_matrix(QString firings1, QString firings2, QString confusion_ma
             label_map.setValue(j + 1, j);
         }
         if (!label_map_out.isEmpty()) {
-            label_map.write64(label_map_out);
+            if (!label_map.write64(label_map_out))
+                return false;
         }
         Mda confusion_matrix2(K1 + 1, K2 + 1);
         for (int k1 = 1; k1 <= K1 + 1; k1++) {
@@ -263,12 +281,14 @@ bool p_confusion_matrix(QString firings1, QString firings2, QString confusion_ma
             }
         }
         if (!confusion_matrix_out.isEmpty()) {
+            printf("Rewriting confusion matrix...\n");
             if (!confusion_matrix2.write64(confusion_matrix_out)) {
                 qWarning() << "Error rewriting confusion matrix output";
                 return false;
             }
         }
         if (!firings2_relabeled_out.isEmpty()) {
+            printf("Writing firings_relabeled_out...\n");
             Mda firings2_relabeled(firings2);
             for (bigint i = 0; i < firings2_relabeled.N2(); i++) {
                 int k = firings2_relabeled.value(2, i);
@@ -276,10 +296,13 @@ bool p_confusion_matrix(QString firings1, QString firings2, QString confusion_ma
                     firings2_relabeled.setValue(label_map_inv.value(k - 1), 2, i);
                 }
             }
-            firings2_relabeled.write64(firings2_relabeled_out);
+            if (!firings2_relabeled.write64(firings2_relabeled_out))
+                return false;
         }
         if (!firings2_relabel_map_out.isEmpty()) {
-            label_map_inv.write64(firings2_relabel_map_out);
+            printf("Writing firings2_relabel_map...\n");
+            if (!label_map_inv.write64(firings2_relabel_map_out))
+                return false;
         }
         for (bigint i = 0; i < L; i++) {
             MFMergeEvent* E = &events3[i];
@@ -291,6 +314,7 @@ bool p_confusion_matrix(QString firings1, QString firings2, QString confusion_ma
     }
 
     if (!matched_firings_out.isEmpty()) {
+        printf("Writing matched_firings...\n");
         // Create the matched firings file
         Mda matched_firings(4, L);
         {
@@ -302,7 +326,8 @@ bool p_confusion_matrix(QString firings1, QString firings2, QString confusion_ma
                 matched_firings.setValue(E->label2, 3, i);
             }
         }
-        matched_firings.write64(matched_firings_out);
+        if (!matched_firings.write64(matched_firings_out))
+            return false;
     }
 
     return true;

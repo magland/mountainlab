@@ -32,11 +32,11 @@
 #include <QThreadPool>
 #include <QtConcurrentRun>
 #include <clustercontextmenuplugin.h>
-#include <firetrackview.h>
+//#include <firetrackview.h>
 #include <mvamphistview3.h>
 #include <mvclipswidget.h>
 #include <clustercontextmenuhandler.h>
-#include <clusterpaircontextmenuhandler.h>
+//#include <clusterpaircontextmenuhandler.h>
 #include <mvcrosscorrelogramswidget3.h>
 #include <mvdiscrimhistview.h>
 #include <qprocessmanager.h>
@@ -51,7 +51,8 @@
 #include <QFileDialog>
 #include <QSettings>
 #include <clipsviewplugin.h>
-#include <mvclusterordercontrol.h>
+#include <diskreadmda32.h>
+//#include <mvclusterordercontrol.h>
 #include <clustermetricsplugin.h>
 #include <curationprogramplugin.h>
 #include "prvgui.h"
@@ -358,18 +359,20 @@ int main(int argc, char* argv[])
             }
             if (CLP.named_parameters.contains("raw")) {
                 QString raw_path = CLP.named_parameters["raw"].toString();
-                dc.addTimeseries("Raw Data", DiskReadMda(raw_path));
+                dc.addTimeseries("Raw Data", DiskReadMda32(raw_path));
                 dc.setCurrentTimeseriesName("Raw Data");
             }
             if (CLP.named_parameters.contains("filt")) {
                 QString filt_path = CLP.named_parameters["filt"].toString();
-                dc.addTimeseries("Filtered Data", DiskReadMda(filt_path));
-                dc.setCurrentTimeseriesName("Filtered Data");
+                dc.addTimeseries("Filtered Data", DiskReadMda32(filt_path));
+                if (DiskReadMda32(filt_path).N2()>1)
+                    dc.setCurrentTimeseriesName("Filtered Data");
             }
             if (CLP.named_parameters.contains("pre")) {
                 QString pre_path = CLP.named_parameters["pre"].toString();
-                dc.addTimeseries("Preprocessed Data", DiskReadMda(pre_path));
-                dc.setCurrentTimeseriesName("Preprocessed Data");
+                dc.addTimeseries("Preprocessed Data", DiskReadMda32(pre_path));
+                if (DiskReadMda32(pre_path).N2()>1)
+                    dc.setCurrentTimeseriesName("Preprocessed Data");
             }
             if (CLP.named_parameters.contains("mlproxy_url")) {
                 QString mlproxy_url = CLP.named_parameters.value("mlproxy_url", "").toString();
@@ -388,10 +391,10 @@ int main(int argc, char* argv[])
                 QString cluster_metrics_path = CLP.named_parameters["cluster_metrics"].toString();
                 dc.loadClusterMetricsFromFile(cluster_metrics_path);
             }
-            if (CLP.named_parameters.contains("cluster_pair_metrics")) {
+            /*if (CLP.named_parameters.contains("cluster_pair_metrics")) {
                 QString cluster_pair_metrics_path = CLP.named_parameters["cluster_pair_metrics"].toString();
                 dc.loadClusterPairMetricsFromFile(cluster_pair_metrics_path);
-            }
+            }*/
             if (CLP.named_parameters.contains("curation")) {
                 QString curation_program_path = CLP.named_parameters["curation"].toString();
                 QString js = TextFile::read(curation_program_path);
@@ -416,6 +419,7 @@ int main(int argc, char* argv[])
             mv2_fname = CacheManager::globalInstance()->makeLocalFile() + ".mv2";
             QString mv2_text = QJsonDocument(mv2).toJson();
             TextFile::write(mv2_fname, mv2_text);
+            CacheManager::globalInstance()->setTemporaryFileDuration(mv2_fname, 600);
         }
 
         if (!mv_fname.isEmpty()) {
@@ -428,32 +432,34 @@ int main(int argc, char* argv[])
             TPV.show();
             bool done_checking = false;
             QJsonObject obj;
-            while (!done_checking) {
-                QString json = TextFile::read(mv2_fname);
-                obj = QJsonDocument::fromJson(json.toLatin1()).object();
-                if (check_whether_prv_objects_need_to_be_downloaded_or_regenerated(obj)) {
-                    ResolvePrvsDialog dlg;
-                    if (dlg.exec() == QDialog::Accepted) {
-                        if (dlg.choice() == ResolvePrvsDialog::OpenPrvGui) {
-                            int exit_code = system(("prv-gui " + mv2_fname).toUtf8().data());
-                            Q_UNUSED(exit_code)
-                            done_checking = false; //check again
-                        }
-                        else if (dlg.choice() == ResolvePrvsDialog::AutomaticallyDownloadAndRegenerate) {
-                            try_to_automatically_download_and_regenerate_prv_objects(obj);
-                            done_checking = false; //check again
+            QString json = TextFile::read(mv2_fname);
+            obj = QJsonDocument::fromJson(json.toLatin1()).object();
+            if (CLP.named_parameters.contains("_prvgui")) {
+                while (!done_checking) {
+                    if (check_whether_prv_objects_need_to_be_downloaded_or_regenerated(obj)) {
+                        ResolvePrvsDialog dlg;
+                        if (dlg.exec() == QDialog::Accepted) {
+                            if (dlg.choice() == ResolvePrvsDialog::OpenPrvGui) {
+                                int exit_code = system(("prv-gui " + mv2_fname).toUtf8().data());
+                                Q_UNUSED(exit_code)
+                                done_checking = false; //check again
+                            }
+                            else if (dlg.choice() == ResolvePrvsDialog::AutomaticallyDownloadAndRegenerate) {
+                                try_to_automatically_download_and_regenerate_prv_objects(obj);
+                                done_checking = false; //check again
+                            }
+                            else {
+                                done_checking = true;
+                            }
                         }
                         else {
-                            done_checking = true;
+                            return -1;
                         }
                     }
-                    else {
-                        return -1;
-                    }
+                    else
+                        done_checking = true;
                 }
-                else
-                    done_checking = true;
-            };
+            }
             context->setFromMV2FileObject(obj);
             context->setMV2FileName(mv2_fname);
         }
@@ -472,7 +478,7 @@ int main(int argc, char* argv[])
         W->addControl(new MVMergeControl(context, W), false);
         W->addControl(new MVPrefsControl(context, W), false);
 
-        W->addControl(new MVClusterOrderControl(context, W), false);
+        //W->addControl(new MVClusterOrderControl(context, W), false);
 
         a.processEvents();
 
@@ -512,7 +518,7 @@ int main(int argc, char* argv[])
             if (fp.isEmpty())
                 fp = firings_paths.value(0);
             SpikeSpyViewData view;
-            view.timeseries = DiskReadMda(tsp);
+            view.timeseries = DiskReadMda32(tsp);
             view.firings = DiskReadMda(fp);
             W->addView(view);
         }
@@ -920,7 +926,7 @@ void setup_main_window(MVMainWindow* W)
     W->registerViewFactory(new MVAmplitudeHistograms3Factory(W));
     W->registerViewFactory(new MVDiscrimHistFactory(W));
     //W->registerViewFactory(new MVDiscrimHistGuideFactory(W));
-    W->registerViewFactory(new MVFireTrackFactory(W));
+    //W->registerViewFactory(new MVFireTrackFactory(W));
 }
 
 bool check_whether_prv_objects_need_to_be_downloaded_or_regenerated(QJsonObject obj)
@@ -982,6 +988,7 @@ void try_to_automatically_download_and_regenerate_prv_objects(QList<PrvRecord> p
             QString src_fname = CacheManager::globalInstance()->makeLocalFile() + ".tmp.prv";
             QString dst_fname = src_fname + ".recover";
             TextFile::write(src_fname, QJsonDocument(prv.original_object).toJson());
+            CacheManager::globalInstance()->setTemporaryFileDuration(src_fname, 600);
             QString cmd = QString("prv recover %1 %2").arg(src_fname).arg(dst_fname);
             system_call_keeping_gui_alive(cmd.toLatin1().data(), "Recovering " + prv.label);
             QFile::remove(src_fname);

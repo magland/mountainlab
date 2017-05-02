@@ -34,13 +34,14 @@ namespace smi {
 bool get_inverse_via_lu_decomposition(int M, float* out, float* in);
 }
 
-void isosplit5_mex(double* labels_out, bigint M, bigint N, double* X)
+void isosplit5_mex(double* labels_out, int M, int N, double* X)
 {
     float* Xf = (float*)malloc(sizeof(float) * M * N);
     int* labelsi = (int*)malloc(sizeof(int) * N);
     for (bigint i = 0; i < M * N; i++)
         Xf[i] = X[i];
     isosplit5_opts opts;
+    //opts.refine_clusters=true;
     isosplit5(labelsi, M, N, Xf, opts);
     for (bigint i = 0; i < N; i++)
         labels_out[i] = labelsi[i];

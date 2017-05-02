@@ -29,6 +29,7 @@ MVPrefsControl::MVPrefsControl(MVAbstractContext* context, MVMainWindow* mw)
         glayout->addWidget(X, row, 1);
         row++;
     }
+    /*
     {
         QWidget* X = this->createChoicesControl("timeseries_for_spikespray");
         connect(context, SIGNAL(timeseriesNamesChanged()), this, SLOT(updateControls()));
@@ -37,6 +38,7 @@ MVPrefsControl::MVPrefsControl(MVAbstractContext* context, MVMainWindow* mw)
         glayout->addWidget(X, row, 1);
         row++;
     }
+    */
     {
         QWidget* X = this->createIntControl("clip_size");
         X->setToolTip("The clip size used for all the views");
@@ -81,6 +83,7 @@ MVPrefsControl::MVPrefsControl(MVAbstractContext* context, MVMainWindow* mw)
         glayout->addWidget(X, row, 1);
         row++;
     }
+    /*
     {
         QWidget* X = this->createChoicesControl("discrim_hist_method");
         QStringList choices;
@@ -92,6 +95,7 @@ MVPrefsControl::MVPrefsControl(MVAbstractContext* context, MVMainWindow* mw)
         glayout->addWidget(X, row, 1);
         row++;
     }
+    */
     this->setLayout(glayout);
 
     updateControls();
@@ -112,18 +116,18 @@ void MVPrefsControl::updateContext()
     MVContext* c = qobject_cast<MVContext*>(mvContext());
     Q_ASSERT(c);
 
-    QString ts4ss = this->controlValue("timeseries_for_spikespray").toString();
-    if (ts4ss == "Default timeseries")
-        ts4ss = "";
+    //QString ts4ss = this->controlValue("timeseries_for_spikespray").toString();
+    //if (ts4ss == "Default timeseries")
+    //    ts4ss = "";
     c->setVisibleChannels(MLUtil::stringListToIntList(this->controlValue("visible_channels").toString().split(",", QString::SkipEmptyParts)));
-    c->setOption("timeseries_for_spikespray", ts4ss);
+    //c->setOption("timeseries_for_spikespray", ts4ss);
     c->setOption("clip_size", this->controlValue("clip_size").toInt());
     c->setOption("cc_max_dt_msec", this->controlValue("cc_max_dt_msec").toDouble());
     c->setOption("cc_log_time_constant_msec", this->controlValue("cc_log_time_constant_msec").toDouble());
     c->setOption("cc_bin_size_msec", this->controlValue("cc_bin_size_msec").toDouble());
     c->setOption("cc_max_est_data_size", this->controlValue("cc_max_est_data_size").toDouble());
     c->setOption("amp_thresh_display", this->controlValue("amp_thresh_display").toDouble());
-    c->setOption("discrim_hist_method", this->controlValue("discrim_hist_method").toString());
+    //c->setOption("discrim_hist_method", this->controlValue("discrim_hist_method").toString());
 }
 
 void MVPrefsControl::updateControls()
@@ -134,12 +138,12 @@ void MVPrefsControl::updateControls()
     QStringList choices = c->timeseriesNames();
     choices.insert(0, "Default timeseries");
     this->setControlValue("visible_channels", MLUtil::intListToStringList(c->visibleChannels()).join(","));
-    this->setChoices("timeseries_for_spikespray", choices);
+    //this->setChoices("timeseries_for_spikespray", choices);
     this->setControlValue("clip_size", c->option("clip_size").toInt());
     this->setControlValue("cc_max_dt_msec", c->option("cc_max_dt_msec").toDouble());
     this->setControlValue("cc_log_time_constant_msec", c->option("cc_log_time_constant_msec").toDouble());
     this->setControlValue("cc_bin_size_msec", c->option("cc_bin_size_msec").toDouble());
     this->setControlValue("cc_max_est_data_size", c->option("cc_max_est_data_size").toDouble());
     this->setControlValue("amp_thresh_display", c->option("amp_thresh_display").toDouble());
-    this->setControlValue("discrim_hist_method", c->option("discrim_hist_method"));
+    //this->setControlValue("discrim_hist_method", c->option("discrim_hist_method"));
 }

@@ -44,7 +44,7 @@ void compute_basic_metrics(MVAbstractContext* mv_context);
 void ClusterMetricsPlugin::initialize(MVMainWindow* mw)
 {
     mw->registerViewFactory(new ClusterMetricsFactory(mw));
-    mw->registerViewFactory(new ClusterPairMetricsFactory(mw));
+    //mw->registerViewFactory(new ClusterPairMetricsFactory(mw));
     //compute_basic_metrics(mw->mvContext());
 }
 

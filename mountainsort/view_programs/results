@@ -22,13 +22,11 @@ if ('firings' in CLP.namedParameters) {
 }
 
 var args='';
-if (file_exists(dsfolder+session_str+'/raw.mda')) {
+if (file_exists(outfolder+'/raw.mda')) {
+	args+=' --raw='+outfolder+'/raw.mda';
+}	
+else if (file_exists(dsfolder+session_str+'/raw.mda')) {
 	args+=' --raw='+dsfolder+session_str+'/raw.mda';
-}
-else {
-	if (file_exists(outfolder+'/raw.mda')) {
-		args+=' --raw='+outfolder+'/raw.mda';
-	}	
 }
 if (file_exists(outfolder+'/filt.mda')) {
 	args+=' --filt='+outfolder+'/filt.mda';

@@ -44,10 +44,11 @@ if M==2
         inds=find(labels==k);
         if (length(inds)>0)
             if (k>0)
-                plot(features(1,inds),features(2,inds),'.','Color',colors{k}); hold on;
+                h=plot(features(1,inds),features(2,inds),'.','Color',colors{k}); hold on;
             else
-                plot(features(1,inds),features(2,inds),'.','Color',[0.5,0.5,0.5]); hold on;
+                h=plot(features(1,inds),features(2,inds),'.','Color',[0.5,0.5,0.5]); hold on;
             end;
+            set(h,'MarkerSize',1);
             legend_titles{end+1}=sprintf('%d',k);
         end;
     end;

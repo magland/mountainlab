@@ -19,22 +19,28 @@ Mda32 extract_clips(const DiskReadMda32& X, const QVector<double>& times, int cl
 Mda32 compute_mean_clip(const Mda32& clips);
 QJsonObject get_cluster_metrics(const DiskReadMda32& X, const QVector<double>& times, P_isolation_metrics_opts opts);
 QJsonObject get_pair_metrics(const DiskReadMda32& X, const QVector<double>& times_k1, const QVector<double>& times_k2, P_isolation_metrics_opts opts);
-QSet<QString> get_pairs_to_compare(const DiskReadMda32& X, const DiskReadMda& F, bigint num_comparisons_per_cluster, const QList<int>& cluster_numbers, P_isolation_metrics_opts opts);
+QSet<QString> get_pairs_to_compare(const Mda32& templates0, bigint num_comparisons_per_cluster, const QList<int>& cluster_numbers, P_isolation_metrics_opts opts);
 double compute_overlap(const DiskReadMda32& X, const QVector<double>& times1, const QVector<double>& times2, P_isolation_metrics_opts opts);
+bool is_bursting_parent_candidate(const Mda32& template0, const Mda32& template0_parent, P_isolation_metrics_opts opts);
+bool test_bursting_timing(const QVector<double>& times, const QVector<double>& times_parent, P_isolation_metrics_opts opts, bool verbose);
 struct ClusterData {
     QVector<double> times;
     QJsonObject cluster_metrics;
     double isolation = 1;
     int overlap_cluster = 0;
+    int bursting_parent = 0;
 };
 }
 
 bool p_isolation_metrics(QStringList timeseries_list, QString firings_path, QString metrics_out_path, QString pair_metrics_out_path, P_isolation_metrics_opts opts)
 {
-    qDebug().noquote() << "p_isolation_metrics";
+    qDebug().noquote() << "Starting p_isolation_metrics";
 
     DiskReadMda32 X(2, timeseries_list);
     Mda firings(firings_path);
+
+    int M = X.N1();
+    int T = opts.clip_size;
 
     QMap<int, P_isolation_metrics::ClusterData> cluster_data;
 
@@ -55,6 +61,7 @@ bool p_isolation_metrics(QStringList timeseries_list, QString firings_path, QStr
     QList<int> cluster_numbers = used_cluster_numbers_set.toList();
     qSort(cluster_numbers);
 
+    qDebug().noquote() << "Computing cluster metrics...";
 #pragma omp parallel for
     for (int jj = 0; jj < cluster_numbers.count(); jj++) {
         DiskReadMda32 X0;
@@ -83,9 +90,29 @@ bool p_isolation_metrics(QStringList timeseries_list, QString firings_path, QStr
         }
     }
 
+    //compute templates
+    qDebug().noquote() << "Computing templates...";
+    Mda32 templates0;
+    {
+        QSet<int> cluster_numbers_set = cluster_numbers.toSet();
+        QVector<double> times;
+        QVector<int> labels;
+        for (bigint i = 0; i < firings.N2(); i++) {
+            bigint label0 = (bigint)firings.value(2, i);
+            if (cluster_numbers_set.contains(label0)) {
+                //inds << i;
+                times << firings.value(1, i);
+                labels << label0;
+            }
+        }
+
+        templates0 = compute_templates_0(X, times, labels, opts.clip_size);
+    }
+
+    qDebug().noquote() << "Determining pairs to compare...";
     QJsonArray cluster_pairs;
     int num_comparisons_per_cluster = 10;
-    QSet<QString> pairs_to_compare = P_isolation_metrics::get_pairs_to_compare(X, firings, num_comparisons_per_cluster, cluster_numbers, opts);
+    QSet<QString> pairs_to_compare = P_isolation_metrics::get_pairs_to_compare(templates0, num_comparisons_per_cluster, cluster_numbers, opts);
     QList<QString> pairs_to_compare_list = pairs_to_compare.toList();
     qSort(pairs_to_compare_list);
 #pragma omp parallel for
@@ -127,6 +154,27 @@ bool p_isolation_metrics(QStringList timeseries_list, QString firings_path, QStr
         }
     }
 
+    if (opts.compute_bursting_parents) {
+        qDebug().noquote() << "Computing bursting parents...";
+        for (int jj = 0; jj < cluster_numbers.count(); jj++) {
+            int k1 = cluster_numbers[jj];
+            Mda32 template1;
+            templates0.getChunk(template1, 0, 0, k1 - 1, M, T, 1);
+            cluster_data[k1].bursting_parent = 0;
+            for (int kk = 0; kk < cluster_numbers.count(); kk++) {
+                int k2 = cluster_numbers[kk];
+                Mda32 template2;
+                templates0.getChunk(template2, 0, 0, k2 - 1, M, T, 1);
+                if (P_isolation_metrics::is_bursting_parent_candidate(template1, template2, opts)) {
+                    bool verbose = false;
+                    if (P_isolation_metrics::test_bursting_timing(cluster_data[k1].times, cluster_data[k2].times, opts, verbose)) {
+                        cluster_data[k1].bursting_parent = k2;
+                    }
+                }
+            }
+        }
+    }
+
     qDebug().noquote() << "preparing clusters array";
     QJsonArray clusters;
     foreach (int k, cluster_numbers) {
@@ -134,10 +182,13 @@ bool p_isolation_metrics(QStringList timeseries_list, QString firings_path, QStr
         tmp["label"] = k;
         cluster_data[k].cluster_metrics["isolation"] = cluster_data[k].isolation;
         cluster_data[k].cluster_metrics["overlap_cluster"] = cluster_data[k].overlap_cluster;
+        if (opts.compute_bursting_parents)
+            cluster_data[k].cluster_metrics["bursting_parent"] = cluster_data[k].bursting_parent;
         tmp["metrics"] = cluster_data[k].cluster_metrics;
         clusters.push_back(tmp);
     }
 
+    qDebug().noquote() << "Writing output...";
     {
         QJsonObject obj;
         obj["clusters"] = clusters;
@@ -415,26 +466,12 @@ double correlation_between_templates(Mda32& X, Mda32& Y)
     return MLCompute::correlation(X.totalSize(), X.dataPtr(), Y.dataPtr());
 }
 
-QSet<QString> get_pairs_to_compare(const DiskReadMda32& X, const DiskReadMda& F, bigint num_comparisons_per_cluster, const QList<int>& cluster_numbers, P_isolation_metrics_opts opts)
+QSet<QString> get_pairs_to_compare(const Mda32& templates0, bigint num_comparisons_per_cluster, const QList<int>& cluster_numbers, P_isolation_metrics_opts opts)
 {
+    (void)opts;
     QSet<QString> ret;
 
     int min_num_comparisons_per_cluster = 3;
-
-    QSet<int> cluster_numbers_set = cluster_numbers.toSet();
-
-    QVector<double> times;
-    QVector<int> labels;
-    for (bigint i = 0; i < F.N2(); i++) {
-        bigint label0 = (bigint)F.value(2, i);
-        if (cluster_numbers_set.contains(label0)) {
-            //inds << i;
-            times << F.value(1, i);
-            labels << label0;
-        }
-    }
-
-    Mda32 templates0 = compute_templates_0(X, times, labels, opts.clip_size);
 
     for (bigint i1 = 0; i1 < cluster_numbers.count(); i1++) {
         bigint k1 = cluster_numbers[i1];
@@ -579,5 +616,53 @@ QJsonObject get_pair_metrics(const DiskReadMda32& X, const QVector<double>& time
     double overlap = P_isolation_metrics::compute_overlap(X, times_k1, times_k2, opts);
     pair_metrics["overlap"] = overlap;
     return pair_metrics;
+}
+bool is_bursting_parent_candidate(const Mda32& template0, const Mda32& template0_parent, P_isolation_metrics_opts opts)
+{
+    double maxabs = 0, maxabs_parent = 0;
+    for (bigint i = 0; i < template0.totalSize(); i++) {
+        maxabs = qMax(fabs(template0.value(i)), maxabs);
+        maxabs_parent = qMax(fabs(template0_parent.value(i)), maxabs_parent);
+    }
+    if (maxabs_parent < maxabs)
+        return false;
+    double cor = MLCompute::correlation(template0.totalSize(), template0.constDataPtr(), template0_parent.constDataPtr());
+    return (cor >= opts.bursting_parent_waveform_correlation_threshold);
+}
+double compute_z_score_for_counts(double expected_count, double count)
+{
+    double sigma = sqrt(qMax(15.0, expected_count));
+    return (count - expected_count) / sigma;
+}
+
+bool test_bursting_timing(const QVector<double>& times_in, const QVector<double>& times_parent_in, P_isolation_metrics_opts opts, bool verbose)
+{
+    double delta = opts.bursting_parent_window;
+    QVector<double> times = times_in;
+    QVector<double> times_parent = times_parent_in;
+    qSort(times);
+    qSort(times_parent);
+    double count_left = 0, count_right = 0;
+    bigint i1 = 0, i2 = 0;
+    while (i1 < times.count()) {
+        while ((i2 + 1 < times_parent.count()) && (times[i1] - delta > times_parent[i2]))
+            i2++;
+        bigint hold_i2 = i2; //for next time
+        while ((i2 < times_parent.count()) && (times[i1] - delta <= times_parent[i2]) && (times_parent[i2] <= times[i1] + delta)) {
+            if (times[i1] > times_parent[i2])
+                count_right++;
+            else if (times[i1] < times_parent[i2])
+                count_left++;
+            i2++;
+        }
+        i2 = hold_i2;
+        i1++;
+    }
+    double expected_count = count_left * opts.bursting_parent_factor;
+    double zz = compute_z_score_for_counts(expected_count, count_right);
+    if (verbose) {
+        qDebug().noquote() << QString("count_left=%1,count_right=%2,zz=%3").arg(count_left).arg(count_right).arg(zz);
+    }
+    return (zz > opts.bursting_parent_z_threshold);
 }
 }

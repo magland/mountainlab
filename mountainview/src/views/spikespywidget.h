@@ -11,9 +11,10 @@
 #include "mvabstractcontext.h"
 
 #include <QWidget>
+#include <diskreadmda32.h>
 
 struct SpikeSpyViewData {
-    DiskReadMda timeseries;
+    DiskReadMda32 timeseries;
     DiskReadMda firings;
 };
 

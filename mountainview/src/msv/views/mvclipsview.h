@@ -9,8 +9,8 @@
 #include "mvutils.h"
 
 #include <QWidget>
+#include <diskreadmda32.h>
 #include <mvabstractcontext.h>
-#include "diskreadmda.h"
 
 /** \class MVClipsView
  *  \brief View a set of clips. Usually each clip contains a single spike.
@@ -24,7 +24,7 @@ public:
     MVClipsView(MVAbstractContext* context);
     virtual ~MVClipsView();
 
-    void setClips(const DiskReadMda& clips);
+    void setClips(const DiskReadMda32& clips);
     /// TODO: (MEDIUM) in mvclipsview implement times/labels for purpose of current event and labeling
     //void setTimes(const QVector<double>& times);
     //void setLabels(const QVector<int>& labels);

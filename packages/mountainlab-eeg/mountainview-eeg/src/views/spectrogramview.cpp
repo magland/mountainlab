@@ -23,7 +23,7 @@
 class SpectrogramViewCalculator {
 public:
     //input
-    DiskReadMda timeseries;
+    DiskReadMda32 timeseries;
     int time_resolution = 32;
     QString spectrogram_freq_range = "";
 

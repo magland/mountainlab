@@ -165,6 +165,7 @@ int main(int argc, char* argv[])
             mv2_fname = CacheManager::globalInstance()->makeLocalFile() + ".mv2";
             QString mv2_text = QJsonDocument(mv2).toJson();
             TextFile::write(mv2_fname, mv2_text);
+            CacheManager::globalInstance()->setTemporaryFileDuration(mv2_fname, 600);
         }
 
         if (!mv2_fname.isEmpty()) {

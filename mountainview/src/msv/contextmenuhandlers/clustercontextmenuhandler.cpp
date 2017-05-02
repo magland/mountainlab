@@ -227,11 +227,12 @@ void MVClusterContextMenuHandler::slot_extract_selected_clusters()
     MVContext* c = qobject_cast<MVContext*>(mainWindow()->mvContext());
     Q_ASSERT(c);
 
-    QString tmp_fname = CacheManager::globalInstance()->makeLocalFile() + ".mv";
+    QString tmp_fname = CacheManager::globalInstance()->makeLocalFile() + ".mv2";
     //QJsonObject obj = this->mainWindow()->mvContext()->toMVFileObject();
     QJsonObject obj = this->mainWindow()->mvContext()->toMV2FileObject();
     QString json = QJsonDocument(obj).toJson();
     TextFile::write(tmp_fname, json);
+    CacheManager::globalInstance()->setTemporaryFileDuration(tmp_fname, 600);
     QString exe = qApp->applicationFilePath();
     QStringList args;
     QList<int> clusters = c->selectedClusters();

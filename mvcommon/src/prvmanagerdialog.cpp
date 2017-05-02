@@ -221,6 +221,7 @@ void PrvManagerDialogPrivate::ensure_local(QJsonObject prv_obj)
 {
     QString tmp_fname = CacheManager::globalInstance()->makeLocalFile(MLUtil::makeRandomId(10) + ".PrvManagerdlg.prv");
     TextFile::write(tmp_fname, QJsonDocument(prv_obj).toJson());
+    CacheManager::globalInstance()->setTemporaryFileDuration(tmp_fname, 600);
     QString cmd = "prv";
     QStringList args;
     args << "ensure-local" << tmp_fname;
@@ -240,6 +241,7 @@ void PrvManagerDialogPrivate::ensure_remote(QJsonObject prv_obj, QString server)
 {
     QString tmp_fname = CacheManager::globalInstance()->makeLocalFile(MLUtil::makeRandomId(10) + ".PrvManagerdlg.prv");
     TextFile::write(tmp_fname, QJsonDocument(prv_obj).toJson());
+    CacheManager::globalInstance()->setTemporaryFileDuration(tmp_fname, 600);
     QString cmd = "prv";
     QStringList args;
     args << "ensure-remote" << tmp_fname << "--server=" + server;

@@ -7,7 +7,7 @@ var os=require('os');
 exports.spec=function() {
 	var spec0=basic_sort.spec();
 	spec0.name='mountainsort.ms2_001_multichannel';
-	spec0.version=spec0.version+'-0.13';
+	spec0.version=spec0.version+'-0.15';
 	spec0.inputs.push({name:'geom'});
 	spec0.parameters.push({name:'adjacency_radius'});
 	return common.clone(spec0);

@@ -25,7 +25,7 @@ struct mvtsv_channel {
 class TimeseriesViewCalculator {
 public:
     //input
-    DiskReadMda timeseries;
+    DiskReadMda32 timeseries;
     QString timeseries_freq_range;
     //QString mlproxy_url;
 
@@ -292,7 +292,7 @@ DiskReadMda apply_filter(DiskReadMda X, QString freq_range)
 
 void TimeseriesViewCalculator::compute()
 {
-    DiskReadMda timeseries2 = apply_filter(timeseries, this->timeseries_freq_range);
+    DiskReadMda32 timeseries2 = apply_filter(timeseries, this->timeseries_freq_range);
     msts.setData(timeseries2);
     //msts.setMLProxyUrl(mlproxy_url);
     msts.initialize();

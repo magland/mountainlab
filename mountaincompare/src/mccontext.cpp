@@ -288,12 +288,12 @@ void MCContext::setColors(const QMap<QString, QColor>& colors)
     d->m_mv_context2->setColors(colors);
 }
 
-DiskReadMda MCContext::currentTimeseries() const
+DiskReadMda32 MCContext::currentTimeseries() const
 {
     return d->m_mv_context1->currentTimeseries();
 }
 
-DiskReadMda MCContext::timeseries(QString name) const
+DiskReadMda32 MCContext::timeseries(QString name) const
 {
     return d->m_mv_context1->timeseries(name);
 }
@@ -308,7 +308,7 @@ QStringList MCContext::timeseriesNames() const
     return d->m_mv_context1->timeseriesNames();
 }
 
-void MCContext::addTimeseries(QString name, DiskReadMda timeseries)
+void MCContext::addTimeseries(QString name, DiskReadMda32 timeseries)
 {
     d->m_mv_context1->addTimeseries(name, timeseries);
     d->m_mv_context2->addTimeseries(name, timeseries);

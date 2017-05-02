@@ -1,7 +1,10 @@
 #ifndef ISOCUT5_H
 #define ISOCUT5_H
 
-#include "mlcommon.h"
+//#include "mlcommon.h"
+#include <stdlib.h>
+
+typedef int64_t bigint;
 
 struct isocut5_opts {
     bool already_sorted = false;

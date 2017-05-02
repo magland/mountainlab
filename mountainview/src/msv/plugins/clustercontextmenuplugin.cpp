@@ -37,6 +37,6 @@ QString ClusterContextMenuPlugin::description()
 void ClusterContextMenuPlugin::initialize(MVMainWindow* mw)
 {
     mw->registerContextMenuHandler(new MVClusterContextMenuHandler(mw));
-    mw->registerContextMenuHandler(new MVClusterPairContextMenuHandler(mw));
+    //mw->registerContextMenuHandler(new MVClusterPairContextMenuHandler(mw));
     MVAbstractPlugin::initialize(mw);
 }

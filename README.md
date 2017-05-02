@@ -20,6 +20,14 @@ Contact the authors for information on the slack team for users and developers.
 
 [The .mda file format](doc/mda_format.md)
 
+## Data management
+
+[The .prv data management system](doc/prv_system.md)
+
+## Automated curation
+
+[Cluster metrics and automated curation](doc/metrics_automated_curation.md)
+
 ## Older information
 
 Here is an old tutorial for running spike sorting:

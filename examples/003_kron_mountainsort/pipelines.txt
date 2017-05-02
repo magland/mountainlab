@@ -1,5 +1,9 @@
-ms2 ms2_001.pipeline --whiten=true --curation=curation_ms2.script --detect_sign=1
-ms2b ms2_001.pipeline --whiten=true --curation=curation_ms2.script --detect_sign=0
+ms2 ms2_002.pipeline --whiten=true --curation=curation_ms2.script --detect_sign=1
+ms2b ms2_002.pipeline --whiten=true --curation=curation_ms2.script --detect_sign=0
+ms2mn ms2_002.pipeline --whiten=true --curation=curation_ms2.script --detect_sign=1 --multineighborhood=true --adjacency_radius=100 --mask_out_artifacts=true
 ks16 kilosort_001.pipeline --num_clusters=16
 ks32 kilosort_001.pipeline --num_clusters=32
 ks64 kilosort_001.pipeline --num_clusters=64
+truth use_truth.pipeline --firings_file_name=firings_true.mda
+
+debug ms2_001.pipeline --whiten=true --curation=curation_ms2.script --detect_sign=1 --multichannel=true --merge_across_channels=true --fit_stage=true --adjacency_radius=100

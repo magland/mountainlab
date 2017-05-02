@@ -130,7 +130,7 @@ QStringList MVEEGContext::timeseriesNames() const
     return d->m_timeseries.keys();
 }
 
-void MVEEGContext::addTimeseries(QString name, DiskReadMda timeseries)
+void MVEEGContext::addTimeseries(QString name, DiskReadMda32 timeseries)
 {
     EEGTimeseriesStruct X;
     X.data = timeseries;

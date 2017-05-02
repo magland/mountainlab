@@ -10,14 +10,39 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <icounter.h>
+#include <qprocessmanager.h>
 #include "mlcommon.h"
 #include "prvguimainwindow.h"
+#include "signal.h"
+#include "objectregistry.h"
+
+void sig_handler(int signum)
+{
+    (void)signum;
+    QProcessManager* manager = ObjectRegistry::getObject<QProcessManager>();
+    if (manager) {
+        manager->closeAll();
+    }
+    abort();
+}
 
 int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
     QApplication::setApplicationName("prv-gui");
     QApplication::setApplicationVersion("0.1");
+
+    ObjectRegistry registry;
+    CounterManager* counterManager = new CounterManager;
+    registry.addAutoReleasedObject(counterManager);
+
+    //The process manager
+    QProcessManager* processManager = new QProcessManager;
+    registry.addAutoReleasedObject(processManager);
+    signal(SIGINT, sig_handler);
+    signal(SIGKILL, sig_handler);
+    signal(SIGTERM, sig_handler);
 
     QCommandLineParser parser;
     parser.setApplicationDescription("prv-gui");

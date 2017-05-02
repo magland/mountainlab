@@ -1,7 +1,8 @@
 #ifndef ISOSPLIT5_H
 #define ISOSPLIT5_H
 
-#include "mlcommon.h"
+//#include "mlcommon.h"
+#include "isocut5.h"
 
 struct isosplit5_opts {
     float isocut_threshold = 1.0;

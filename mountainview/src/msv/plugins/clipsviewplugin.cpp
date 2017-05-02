@@ -44,6 +44,9 @@ void ClipsViewPlugin::initialize(MVMainWindow* mw)
 
 QList<QAction*> ClipsViewPlugin::actions(const QMimeData& md)
 {
+    (void)md;
+    return QList<QAction*>();
+    /*
     QList<QAction*> actions;
     if (!md.data("x-mv-main").isEmpty()) {
         QAction* action = new QAction("Clips", 0);
@@ -54,6 +57,7 @@ QList<QAction*> ClipsViewPlugin::actions(const QMimeData& md)
         actions << action;
     }
     return actions;
+    */
 }
 
 ClipsViewFactory::ClipsViewFactory(MVMainWindow* mw, QObject* parent)
@@ -68,7 +72,7 @@ QString ClipsViewFactory::id() const
 
 QString ClipsViewFactory::name() const
 {
-    return tr("Clips View");
+    return tr("Clips");
 }
 
 QString ClipsViewFactory::title() const

@@ -7,6 +7,7 @@
 #include "taskprogress.h"
 #include "icounter.h"
 #include <objectregistry.h>
+#include <QFile>
 
 #define MDA_MAX_DIMS 6
 
@@ -67,7 +68,7 @@ bool Mda32::write64(const QString& path) const
 
 bool Mda32::writeCsv(const QString& path) const
 {
-    return d->write_to_text_file(path);
+    return d->write_to_text_file(path, ',');
 }
 
 bool Mda32::read(const char* path)
@@ -100,8 +101,11 @@ bool Mda32::readCsv(const QString& path)
 
 bool Mda32::write8(const char* path) const
 {
-    if ((QString(path).endsWith(".txt")) || (QString(path).endsWith(".csv"))) {
-        return d->write_to_text_file(path);
+    if (QString(path).endsWith(".txt")) {
+        return d->write_to_text_file(path, ' ');
+    }
+    if (QString(path).endsWith(".csv")) {
+        return d->write_to_text_file(path, ',');
     }
     FILE* output_file = fopen(path, "wb");
     if (!output_file) {
@@ -125,8 +129,11 @@ bool Mda32::write8(const char* path) const
 
 bool Mda32::write32(const char* path) const
 {
-    if ((QString(path).endsWith(".txt")) || (QString(path).endsWith(".csv"))) {
-        return d->write_to_text_file(path);
+    if (QString(path).endsWith(".txt")) {
+        return d->write_to_text_file(path, ' ');
+    }
+    if (QString(path).endsWith(".csv")) {
+        return d->write_to_text_file(path, ',');
     }
     FILE* output_file = fopen(path, "wb");
     if (!output_file) {
@@ -150,8 +157,11 @@ bool Mda32::write32(const char* path) const
 
 bool Mda32::write64(const char* path) const
 {
-    if ((QString(path).endsWith(".txt")) || (QString(path).endsWith(".csv"))) {
-        return d->write_to_text_file(path);
+    if (QString(path).endsWith(".txt")) {
+        return d->write_to_text_file(path, ' ');
+    }
+    if (QString(path).endsWith(".csv")) {
+        return d->write_to_text_file(path, ',');
     }
     FILE* output_file = fopen(path, "wb");
     if (!output_file) {
@@ -177,28 +187,36 @@ QByteArray Mda32::toByteArray8() const
 {
     QString path = CacheManager::globalInstance()->makeLocalFile("", CacheManager::ShortTerm);
     write8(path);
-    return MLUtil::readByteArray(path);
+    QByteArray ret = MLUtil::readByteArray(path);
+    QFile::remove(path);
+    return ret;
 }
 
 QByteArray Mda32::toByteArray32() const
 {
     QString path = CacheManager::globalInstance()->makeLocalFile("", CacheManager::ShortTerm);
     write32(path);
-    return MLUtil::readByteArray(path);
+    QByteArray ret = MLUtil::readByteArray(path);
+    QFile::remove(path);
+    return ret;
 }
 
 QByteArray Mda32::toByteArray64() const
 {
     QString path = CacheManager::globalInstance()->makeLocalFile("", CacheManager::ShortTerm);
     write64(path);
-    return MLUtil::readByteArray(path);
+    QByteArray ret = MLUtil::readByteArray(path);
+    QFile::remove(path);
+    return ret;
 }
 
 bool Mda32::fromByteArray(const QByteArray& X)
 {
     QString path = CacheManager::globalInstance()->makeLocalFile("", CacheManager::ShortTerm);
     MLUtil::writeByteArray(path, X);
-    return this->read(path);
+    bool ret = this->read(path);
+    QFile::remove(path);
+    return ret;
 }
 
 int Mda32::ndims() const

@@ -46,9 +46,9 @@ public:
     QString resolve_file_name_p(QString fname);
     QVariantMap resolve_file_names_in_parameters(QString processor_name, const QVariantMap& parameters);
     QString compute_unique_object_code(QJsonObject obj);
-    QJsonObject compute_unique_process_object(MLProcessor P, const QVariantMap& parameters);
-    bool all_input_and_output_files_exist(MLProcessor P, const QVariantMap& parameters);
-    QJsonObject create_file_object(const QString& fname);
+    QJsonObject compute_unique_process_object(MLProcessor P, const QVariantMap& parameters, bool rprv_inputs);
+    bool all_input_and_output_files_exist(MLProcessor P, const QVariantMap& parameters, bool allow_rprv_inputs, bool allow_rprv_outputs);
+    QJsonObject create_file_object(const QString& fname, bool allow_rprv_inputs);
     void reload_processors();
 
     static MLProcessor create_processor_from_json_object(QJsonObject obj);
@@ -415,17 +415,17 @@ void ProcessManager::setDefaultParameters(const QString& processor_name, QVarian
     }
 }
 
-bool ProcessManager::processAlreadyCompleted(const QString& processor_name, const QVariantMap& parameters)
+bool ProcessManager::processAlreadyCompleted(const QString& processor_name, const QVariantMap& parameters, bool allow_rprv_inputs, bool allow_rprv_outputs)
 {
     if (!d->m_processors.contains(processor_name))
         return false;
 
     MLProcessor P = d->m_processors[processor_name];
 
-    if (!d->all_input_and_output_files_exist(P, parameters))
+    if (!d->all_input_and_output_files_exist(P, parameters, allow_rprv_inputs, allow_rprv_outputs))
         return false;
 
-    QJsonObject obj = d->compute_unique_process_object(P, parameters);
+    QJsonObject obj = d->compute_unique_process_object(P, parameters, allow_rprv_inputs);
 
     QString code = d->compute_unique_object_code(obj);
 
@@ -474,6 +474,55 @@ bool ProcessManager::isFinished(const QString& id)
     return processInfo(id).finished;
 }
 
+bool output_object_still_exists(const QJsonObject& obj)
+{
+    QString path = obj["path"].toString();
+    QDateTime last_modified = QDateTime::fromString(obj["last_modified"].toString(), "yyyy-MM-dd-hh-mm-ss-zzz");
+    bigint size = obj["size"].toDouble();
+    if (QFile::exists(path)) {
+        if (QFileInfo(path).size() == size) {
+            if (QFileInfo(path).lastModified().secsTo(last_modified) == 0) { //round to nearest second is important i think
+                return true;
+            }
+        }
+    }
+    else {
+        if (QFile::exists(path + ".rprv")) {
+            QJsonObject rprv = QJsonDocument::fromJson(TextFile::read(path + ".rprv").toUtf8()).object();
+            QDateTime last_modified0 = QDateTime::fromString(rprv["original_last_modified"].toString(), "yyyy-MM-dd-hh-mm-ss-zzz");
+            bigint size0 = rprv["original_size"].toDouble();
+            if (size0 == size) {
+                if (last_modified0.secsTo(last_modified) == 0) { //round to nearest second is important i think
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+void ProcessManager::cleanUpCompletedProcessRecords()
+{
+    qDebug().noquote() << "Cleaning up completed process records...";
+    QString path = MPDaemon::daemonPath() + "/completed_processes";
+    QStringList list = QDir(path).entryList(QStringList("*.json"), QDir::Files, QDir::Name);
+    foreach (QString fname, list) {
+        QString path2 = path + "/" + fname;
+        QJsonObject obj = QJsonDocument::fromJson(TextFile::read(path2).toUtf8()).object();
+        QJsonObject outputs = obj["outputs"].toObject();
+        QStringList output_pnames = outputs.keys();
+        foreach (QString pname, output_pnames) {
+            QJsonObject A = outputs[pname].toObject();
+            if (A["size"].toDouble()) { //maybe there is no such output
+                if (!output_object_still_exists(A)) {
+                    qDebug().noquote() << "Removing completed process record: " + path2;
+                    QFile::remove(path2);
+                }
+            }
+        }
+    }
+}
+
 Q_GLOBAL_STATIC(ProcessManager, theInstance)
 ProcessManager* ProcessManager::globalInstance()
 {
@@ -509,7 +558,7 @@ void ProcessManager::slot_process_finished()
         else {
             MLProcessor processor = d->m_processors[processor_name];
             if (!d->m_processes[id].exec_mode) { //in exec_mode we don't keep track of which processes have already completed
-                QJsonObject obj = d->compute_unique_process_object(processor, parameters);
+                QJsonObject obj = d->compute_unique_process_object(processor, parameters, false);
                 QString code = d->compute_unique_object_code(obj);
                 QString fname = MPDaemon::daemonPath() + "/completed_processes/" + code + ".json";
                 QString json = QJsonDocument(obj).toJson();
@@ -710,7 +759,7 @@ MLParameter ProcessManagerPrivate::create_parameter_from_json_object(QJsonObject
     return param;
 }
 
-QJsonObject ProcessManagerPrivate::compute_unique_process_object(MLProcessor P, const QVariantMap& parameters)
+QJsonObject ProcessManagerPrivate::compute_unique_process_object(MLProcessor P, const QVariantMap& parameters, bool allow_rprv_inputs)
 {
     /*
      * Returns an object that depends uniquely on the following:
@@ -733,13 +782,13 @@ QJsonObject ProcessManagerPrivate::compute_unique_process_object(MLProcessor P, 
         foreach (QString input_pname, input_pnames) {
             QStringList fnames = MLUtil::toStringList(parameters[input_pname]);
             if (fnames.count() == 1) {
-                inputs[input_pname] = create_file_object(resolve_file_name_p(fnames[0]));
+                inputs[input_pname] = create_file_object(resolve_file_name_p(fnames[0]), allow_rprv_inputs);
             }
             else {
                 QJsonArray array;
                 foreach (QString fname0, fnames) {
                     QString fname = resolve_file_name_p(fname0);
-                    array.append(create_file_object(fname));
+                    array.append(create_file_object(fname, allow_rprv_inputs));
                 }
                 inputs[input_pname] = array;
             }
@@ -753,13 +802,13 @@ QJsonObject ProcessManagerPrivate::compute_unique_process_object(MLProcessor P, 
         foreach (QString output_pname, output_pnames) {
             QStringList fnames = MLUtil::toStringList(parameters[output_pname]);
             if (fnames.count() == 1) {
-                outputs[output_pname] = create_file_object(resolve_file_name_p(fnames[0]));
+                outputs[output_pname] = create_file_object(resolve_file_name_p(fnames[0]), true);
             }
             else {
                 QJsonArray array;
                 foreach (QString fname0, fnames) {
                     QString fname = resolve_file_name_p(fname0);
-                    array.append(create_file_object(fname));
+                    array.append(create_file_object(fname, true));
                 }
                 outputs[output_pname] = array;
             }
@@ -778,22 +827,53 @@ QJsonObject ProcessManagerPrivate::compute_unique_process_object(MLProcessor P, 
     return obj;
 }
 
-bool ProcessManagerPrivate::all_input_and_output_files_exist(MLProcessor P, const QVariantMap& parameters)
+bool ProcessManagerPrivate::all_input_and_output_files_exist(MLProcessor P, const QVariantMap& parameters, bool allow_rprv_input_files, bool allow_rprv_output_files)
 {
-    QStringList file_pnames = P.inputs.keys();
-    file_pnames.append(P.outputs.keys());
-    foreach (QString pname, file_pnames) {
+    QStringList input_file_pnames = P.inputs.keys();
+    QStringList output_file_pnames = P.outputs.keys();
+
+    foreach (QString pname, input_file_pnames) {
         QStringList fnames = MLUtil::toStringList(parameters.value(pname));
         foreach (QString fname0, fnames) {
             if (!fname0.isEmpty()) {
                 QString fname = resolve_file_name_p(fname0);
                 if (!fname.isEmpty()) {
-                    if (!QFile::exists(fname))
-                        return false;
+                    if (!QFile::exists(fname)) {
+                        if (allow_rprv_input_files) {
+                            if (!QFile::exists(fname + ".rprv")) {
+                                return false;
+                            }
+                        }
+                        else {
+                            return false;
+                        }
+                    }
                 }
             }
         }
     }
+
+    foreach (QString pname, output_file_pnames) {
+        QStringList fnames = MLUtil::toStringList(parameters.value(pname));
+        foreach (QString fname0, fnames) {
+            if (!fname0.isEmpty()) {
+                QString fname = resolve_file_name_p(fname0);
+                if (!fname.isEmpty()) {
+                    if (!QFile::exists(fname)) {
+                        if (allow_rprv_output_files) {
+                            if (!QFile::exists(fname + ".rprv")) {
+                                return false;
+                            }
+                        }
+                        else {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     return true;
 }
 
@@ -808,7 +888,7 @@ QString ProcessManagerPrivate::compute_unique_object_code(QJsonObject obj)
     return QString(hash.result().toHex());
 }
 
-QJsonObject ProcessManagerPrivate::create_file_object(const QString& fname_in)
+QJsonObject ProcessManagerPrivate::create_file_object(const QString& fname_in, bool allow_rprv_inputs)
 {
     QString fname = resolve_file_name_p(fname_in);
     QJsonObject obj;
@@ -816,18 +896,28 @@ QJsonObject ProcessManagerPrivate::create_file_object(const QString& fname_in)
         return obj;
     obj["path"] = fname;
     if (!QFile::exists(fname)) {
-        obj["size"] = 0;
-        return obj;
+        if ((allow_rprv_inputs) && (QFile::exists(fname_in + ".rprv"))) {
+            QString json0 = TextFile::read(fname_in + ".rprv");
+            QJsonObject obj0 = QJsonDocument::fromJson(json0.toUtf8()).object();
+            obj["size"] = obj0["original_size"];
+            obj["last_modified"] = obj0["original_last_modified"];
+        }
+        else {
+            obj["size"] = 0;
+            return obj;
+        }
     }
-    obj["size"] = QFileInfo(fname).size();
-    obj["last_modified"] = QFileInfo(fname).lastModified().toString("yyyy-MM-dd-hh-mm-ss-zzz");
+    else {
+        obj["size"] = QFileInfo(fname).size();
+        obj["last_modified"] = QFileInfo(fname).lastModified().toString("yyyy-MM-dd-hh-mm-ss-zzz");
+    }
     if (QFileInfo(fname).isDir()) {
         QStringList fnames = QDir(fname).entryList(QDir::Files, QDir::Name);
         QJsonArray files_array;
         foreach (QString fname2, fnames) {
             QJsonObject obj0;
             obj0["name"] = fname2;
-            obj0["object"] = create_file_object(fname + "/" + fname2);
+            obj0["object"] = create_file_object(fname + "/" + fname2, false);
             files_array.push_back(obj0);
         }
         obj["files"] = files_array;
@@ -837,7 +927,7 @@ QJsonObject ProcessManagerPrivate::create_file_object(const QString& fname_in)
         foreach (QString dirname2, dirnames) {
             QJsonObject obj0;
             obj0["name"] = dirname2;
-            obj0["object"] = create_file_object(fname + "/" + dirname2);
+            obj0["object"] = create_file_object(fname + "/" + dirname2, false);
             dirs_array.push_back(obj0);
         }
         obj["directories"] = dirs_array;

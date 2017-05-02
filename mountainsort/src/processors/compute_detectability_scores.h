@@ -10,6 +10,7 @@
 #include <QList>
 #include <QString>
 #include <diskreadmda.h>
+#include <diskreadmda32.h>
 #include <mda.h>
 
 struct compute_detectability_scores_opts {
@@ -36,16 +37,16 @@ struct Define_Shells_Opts {
 };
 
 QVector<int> find_label_inds(const QVector<int>& labels, int k);
-Mda get_subclips(Mda& clips, const QList<int>& inds);
+Mda32 get_subclips(Mda32& clips, const QList<int>& inds);
 QList<Shell> define_shells(const QVector<double>& peaks, const Define_Shells_Opts& opts);
 QVector<double> randsample_with_replacement(int N, int K);
-Mda estimate_noise_shape(DiskReadMda& X, int T, int ch);
+Mda32 estimate_noise_shape(DiskReadMda32& X, int T, int ch);
 Mda compute_features(Mda& clips, int num_features);
 void compute_geometric_median(int M, int N, double* output, double* input, int num_iterations = 10);
-Mda compute_geometric_median_template(Mda& clips);
+Mda32 compute_geometric_median_template(Mda& clips);
 double compute_template_ip(Mda& T1, Mda& T2);
 double compute_template_norm(Mda& T);
-QList<Subcluster> compute_subcluster_detectability_scores(Mda& noise_shape, Mda& clips, int channel, const Define_Shells_Opts& opts);
+QList<Subcluster> compute_subcluster_detectability_scores(Mda32& noise_shape, Mda32& clips, int channel, const Define_Shells_Opts& opts);
 double compute_slope(const QVector<double>& X, const QVector<double>& Y);
 
 #endif // COMPUTE_DETECTABILITY_SCORES_H

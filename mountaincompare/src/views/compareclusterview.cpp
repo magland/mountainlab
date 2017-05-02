@@ -14,7 +14,7 @@
 class CompareClusterViewCalculator {
 public:
     //input
-    DiskReadMda timeseries;
+    DiskReadMda32 timeseries;
     DiskReadMda firings_merged;
     QList<int> ks_1;
     int clip_size;
@@ -119,7 +119,7 @@ DiskReadMda extract_firings_subset(DiskReadMda firings, QList<int> ks, int label
     return ret;
 }
 
-DiskReadMda compute_firings_features(DiskReadMda timeseries, DiskReadMda firings, int npca, int clip_size)
+DiskReadMda compute_firings_features(DiskReadMda32 timeseries, DiskReadMda firings, int npca, int clip_size)
 {
     TaskProgress task("compute_firings_features");
     task.log() << "timeseries dimensions:" << timeseries.N1() << timeseries.N2();

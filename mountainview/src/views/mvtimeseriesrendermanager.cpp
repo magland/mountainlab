@@ -30,7 +30,7 @@ struct ImagePanel {
     int index;
     double amp_factor;
     QImage image;
-    Mda min_data, max_data;
+    Mda32 min_data, max_data;
     QString make_code();
 };
 
@@ -146,8 +146,8 @@ QImage MVTimeSeriesRenderManager::getImage(double t1, double t2, double amp_fact
         }
 
         p = d->render_panel(p);
-        d->m_visible_minimum = qMin(d->m_visible_minimum, p.min_data.minimum());
-        d->m_visible_maximum = qMax(d->m_visible_maximum, p.max_data.maximum());
+        d->m_visible_minimum = qMin(d->m_visible_minimum, 1.0 * p.min_data.minimum());
+        d->m_visible_maximum = qMax(d->m_visible_maximum, 1.0 * p.max_data.maximum());
         if (p.image.width()) {
             double a1 = (iii * panel_num_points * ds_factor - t1) * 1.0 / (t2 - t1) * W;
             double a2 = ((iii + 1) * panel_num_points * ds_factor - t1) * 1.0 / (t2 - t1) * W;
@@ -313,7 +313,7 @@ void MVTimeSeriesRenderManagerThread::run()
     int t1 = index * panel_num_points;
     int t2 = (index + 1) * panel_num_points;
 
-    Mda Xmin, Xmax;
+    Mda32 Xmin, Xmax;
     ts.getData(Xmin, Xmax, t1, t2, ds_factor);
 
     if (MLUtil::threadInterruptRequested())

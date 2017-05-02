@@ -4,6 +4,7 @@
 #include <QString>
 
 struct Whiten_opts {
+    double quantization_unit = 0;
 };
 
 bool p_whiten(QString timeseries, QString timeseries_out, Whiten_opts opts);

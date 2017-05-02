@@ -18,12 +18,23 @@ var firings1_path=outfolders[0]+'/'+(CLP.namedParameters.firings1||'firings.mda'
 var firings2_path=outfolders[1]+'/'+(CLP.namedParameters.firings2||'firings.mda');
 
 var args='';
-args+=' --raw='+dsfolders[0]+'/raw.mda';
+if (file_exists(outfolders[0]+'/raw.mda')) {
+	args+=' --raw='+outfolders[0]+'/raw.mda';
+}
+else if (file_exists(dsfolders[0]+'/raw.mda')) {
+	args+=' --raw='+dsfolders[0]+'/raw.mda';
+}
 if (file_exists(outfolders[0]+'/filt.mda')) {
 	args+=' --filt='+outfolders[0]+'/filt.mda';
 }
 if (file_exists(outfolders[0]+'/pre.mda')) {
 	args+=' --pre='+outfolders[0]+'/pre.mda';
+}
+if (file_exists(outfolders[0]+'/geom.csv')) {
+	args+=' --geom='+outfolders[0]+'/geom.csv';
+}
+else if (file_exists(dsfolders[0]+'/geom.csv')) {
+	args+=' --geom='+dsfolders[0]+'/geom.csv';
 }
 args+=' --firings1='+firings1_path;
 args+=' --firings2='+firings2_path;
@@ -93,5 +104,5 @@ function read_text_file(path) {
 }
 
 function file_exists(path) {
-	return fs.existsSync(path);
+	return (fs.existsSync(path))||(fs.existsSync(path+'.prv'));
 }

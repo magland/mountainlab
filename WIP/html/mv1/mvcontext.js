@@ -130,7 +130,7 @@ function MVContext {
     DiskReadMda currentTimeseries() const;
     QString currentTimeseriesName() const;
     QStringList timeseriesNames() const;
-    void addTimeseries(QString name, DiskReadMda timeseries);
+    void addTimeseries(QString name, DiskReadMda32 timeseries);
     void setCurrentTimeseriesName(QString name);
 
     /////////////////////////////////////////////////

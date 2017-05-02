@@ -378,6 +378,7 @@ void MVExportControl::slot_open_prv_manager()
             errtask.error("Error writing .mv2 file: " + fname);
             return;
         }
+        CacheManager::globalInstance()->setTemporaryFileDuration(fname, 600);
     }
     int exit_code = system(("prv-gui " + fname).toUtf8().data());
     Q_UNUSED(exit_code)

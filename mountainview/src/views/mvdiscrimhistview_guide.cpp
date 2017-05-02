@@ -18,7 +18,7 @@ class MVDiscrimHistViewGuideComputer {
 public:
     //input
     QString mlproxy_url;
-    DiskReadMda timeseries;
+    DiskReadMda32 timeseries;
     DiskReadMda firings;
     int num_histograms; //old version
     QSet<int> clusters_to_exclude; //old version

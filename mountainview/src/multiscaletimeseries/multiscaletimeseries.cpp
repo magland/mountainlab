@@ -14,6 +14,7 @@
 #include <sys/stat.h>
 #include <QFileInfo>
 #include <QMutex>
+#include <diskreadmda32.h>
 #include <math.h>
 #include "mountainprocessrunner.h"
 #include "mlcommon.h"
@@ -22,14 +23,14 @@ class MultiScaleTimeSeriesPrivate {
 public:
     MultiScaleTimeSeries* q;
 
-    DiskReadMda m_data;
-    DiskReadMda m_multiscale_data;
+    DiskReadMda32 m_data;
+    DiskReadMda32 m_multiscale_data;
     bool m_initialized;
     QString m_remote_data_type;
     QString m_mlproxy_url;
 
     QString get_multiscale_fname();
-    bool get_data(Mda& min, Mda& max, int t1, int t2, int ds_factor);
+    bool get_data(Mda32& min, Mda32& max, int t1, int t2, int ds_factor);
 
     static bool is_power_of_3(int N);
 };
@@ -68,10 +69,10 @@ void MultiScaleTimeSeries::operator=(const MultiScaleTimeSeries& other)
     d->m_remote_data_type = other.d->m_remote_data_type;
 }
 
-void MultiScaleTimeSeries::setData(const DiskReadMda& X)
+void MultiScaleTimeSeries::setData(const DiskReadMda32& X)
 {
     d->m_data = X;
-    d->m_multiscale_data = DiskReadMda();
+    d->m_multiscale_data = DiskReadMda32();
     d->m_initialized = false;
 }
 
@@ -129,7 +130,7 @@ int MultiScaleTimeSeries::N2()
     return d->m_data.N2();
 }
 
-bool MultiScaleTimeSeries::getData(Mda& min, Mda& max, int t1, int t2, int ds_factor)
+bool MultiScaleTimeSeries::getData(Mda32& min, Mda32& max, int t1, int t2, int ds_factor)
 {
     return d->get_data(min, max, t1, t2, ds_factor);
 }
@@ -137,7 +138,7 @@ bool MultiScaleTimeSeries::getData(Mda& min, Mda& max, int t1, int t2, int ds_fa
 double MultiScaleTimeSeries::minimum()
 {
     int ds_factor = MultiScaleTimeSeries::smallest_power_of_3_larger_than(this->N2() / 3);
-    Mda min, max;
+    Mda32 min, max;
     this->getData(min, max, 0, 0, ds_factor);
     return min.minimum();
 }
@@ -145,7 +146,7 @@ double MultiScaleTimeSeries::minimum()
 double MultiScaleTimeSeries::maximum()
 {
     int ds_factor = MultiScaleTimeSeries::smallest_power_of_3_larger_than(this->N2() / 3);
-    Mda min, max;
+    Mda32 min, max;
     this->getData(min, max, 0, 0, ds_factor);
     return max.maximum();
 }
@@ -159,7 +160,7 @@ int MultiScaleTimeSeries::smallest_power_of_3_larger_than(int N)
     return ret;
 }
 
-bool MultiScaleTimeSeriesPrivate::get_data(Mda& min, Mda& max, int t1, int t2, int ds_factor)
+bool MultiScaleTimeSeriesPrivate::get_data(Mda32& min, Mda32& max, int t1, int t2, int ds_factor)
 {
     int M, N, N2;
     {
@@ -183,7 +184,7 @@ bool MultiScaleTimeSeriesPrivate::get_data(Mda& min, Mda& max, int t1, int t2, i
         //we are somewhat out of range.
         min.allocate(M, t2 - t1 + 1);
         max.allocate(M, t2 - t1 + 1);
-        Mda min0, max0;
+        Mda32 min0, max0;
         int s1 = t1, s2 = t2;
         if (s1 < 0)
             s1 = 0;

@@ -20,10 +20,10 @@ public:
 
     /////////////////////////////////////////////////
     DiskReadMda currentTimeseries() const;
-    DiskReadMda timeseries(QString name) const;
+    DiskReadMda32 timeseries(QString name) const;
     QString currentTimeseriesName() const;
     QStringList timeseriesNames() const;
-    void addTimeseries(QString name, DiskReadMda timeseries);
+    void addTimeseries(QString name, DiskReadMda32 timeseries);
     void setCurrentTimeseriesName(QString name);
 
     /////////////////////////////////////////////////
