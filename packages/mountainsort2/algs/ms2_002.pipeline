@@ -6,6 +6,7 @@ function main(params) {
 		detect_interval_msec:0.33, //min separation between two events on same channel (default is 10 samples at 30 KHz)
 		detect_threshold:3.0, //stdevs away from noise
 		detect_sign:0, //-1,0,1
+        detect_rms_window:0, //0 does not use RMS power for detect, >0 uses that length window (in samples)
 		whiten:'true', //boolean
 		fit_stage:'true', //boolean
 		segment_duration_sec:3600, //duration of a single time segment for processing
