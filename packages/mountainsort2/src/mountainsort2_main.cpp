@@ -118,6 +118,7 @@ QJsonObject get_spec()
         X.addOutputs("event_times_out");
         X.addRequiredParameters("central_channel", "detect_threshold", "detect_interval", "sign");
         X.addOptionalParameter("subsample_factor", "", 1);
+        X.addOptionalParameter("detect_rms_window", "", 0);
         processors.push_back(X.get_spec());
     }
     {
@@ -404,6 +405,7 @@ int main(int argc, char* argv[])
         opts.central_channel = CLP.named_parameters["central_channel"].toInt();
         opts.detect_threshold = CLP.named_parameters["detect_threshold"].toDouble();
         opts.detect_interval = CLP.named_parameters["detect_interval"].toDouble();
+        opts.detect_rms_window = CLP.named_parameters["detect_rms_window"].toDouble();
         opts.sign = CLP.named_parameters["sign"].toInt();
         opts.subsample_factor = CLP.named_parameters["subsample_factor"].toDouble();
         ret = p_detect_events(timeseries, event_times_out, opts);
