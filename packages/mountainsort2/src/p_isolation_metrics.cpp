@@ -619,7 +619,7 @@ QJsonObject get_pair_metrics(const DiskReadMda32& X, const QVector<double>& time
 }
 bool is_bursting_parent_candidate(const Mda32& template0, const Mda32& template0_parent, P_isolation_metrics_opts opts)
 {
-    double maxabs = 0, maxabs_parent = 0;
+    float maxabs = 0, maxabs_parent = 0;
     for (bigint i = 0; i < template0.totalSize(); i++) {
         maxabs = qMax(fabs(template0.value(i)), maxabs);
         maxabs_parent = qMax(fabs(template0_parent.value(i)), maxabs_parent);

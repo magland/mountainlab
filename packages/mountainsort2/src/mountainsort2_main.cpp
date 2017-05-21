@@ -118,6 +118,7 @@ QJsonObject get_spec()
         X.addOutputs("event_times_out");
         X.addRequiredParameters("central_channel", "detect_threshold", "detect_interval", "sign");
         X.addOptionalParameter("subsample_factor", "", 1);
+        X.addOptionalParameter("detect_rms_window", "", 0);
         processors.push_back(X.get_spec());
     }
     {
@@ -140,6 +141,9 @@ QJsonObject get_spec()
         ProcessorSpec X("mountainsort.sort_clips", "0.11a");
         X.addInputs("clips");
         X.addOutputs("labels_out");
+        X.addOptionalParameter("isocut_threshold", "", 1.0);
+        X.addOptionalParameter("weighted_pca", "", 0);
+        X.addOptionalParameter("remove_outliers", "", 0);
         //X.addRequiredParameters();
         X.addOptionalParameter("isocut_threshold", "", 1);
         processors.push_back(X.get_spec());
@@ -405,6 +409,7 @@ int main(int argc, char* argv[])
         opts.central_channel = CLP.named_parameters["central_channel"].toInt();
         opts.detect_threshold = CLP.named_parameters["detect_threshold"].toDouble();
         opts.detect_interval = CLP.named_parameters["detect_interval"].toDouble();
+        opts.detect_rms_window = CLP.named_parameters["detect_rms_window"].toDouble();
         opts.sign = CLP.named_parameters["sign"].toInt();
         opts.subsample_factor = CLP.named_parameters["subsample_factor"].toDouble();
         ret = p_detect_events(timeseries, event_times_out, opts);
@@ -429,6 +434,9 @@ int main(int argc, char* argv[])
         QString clips = CLP.named_parameters["clips"].toString();
         QString labels_out = CLP.named_parameters["labels_out"].toString();
         Sort_clips_opts opts;
+        opts.weighted_pca = CLP.named_parameters["weighted_pca"].toInt();
+        opts.remove_outliers = CLP.named_parameters["remove_outliers"].toInt();
+        opts.isocut_threshold = CLP.named_parameters["isocut_threshold"].toDouble();
         ret = p_sort_clips(clips, labels_out, opts);
     }
     else if (arg1 == "mountainsort.reorder_labels") {
