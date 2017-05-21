@@ -365,13 +365,13 @@ int main(int argc, char* argv[])
             if (CLP.named_parameters.contains("filt")) {
                 QString filt_path = CLP.named_parameters["filt"].toString();
                 dc.addTimeseries("Filtered Data", DiskReadMda32(filt_path));
-                if (DiskReadMda32(filt_path).N2()>1)
+                if (DiskReadMda32(filt_path).N2() > 1)
                     dc.setCurrentTimeseriesName("Filtered Data");
             }
             if (CLP.named_parameters.contains("pre")) {
                 QString pre_path = CLP.named_parameters["pre"].toString();
                 dc.addTimeseries("Preprocessed Data", DiskReadMda32(pre_path));
-                if (DiskReadMda32(pre_path).N2()>1)
+                if (DiskReadMda32(pre_path).N2() > 1)
                     dc.setCurrentTimeseriesName("Preprocessed Data");
             }
             if (CLP.named_parameters.contains("mlproxy_url")) {

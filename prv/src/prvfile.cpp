@@ -253,7 +253,7 @@ QString PrvFile::locateDirectory(const PrvFileLocateOptions& opts)
     if (opts.verbose) {
         qDebug().noquote() << "original_path=" + original_path;
     }
-    return MLUtil::locatePrv(obj);
+    return MLUtil::locatePrv(obj, opts.local_search_paths);
 }
 
 QString PrvFile::prvFilePath() const
@@ -415,17 +415,27 @@ QString PrvFilePrivate::find_remote_file(int size, const QString& checksum, cons
 {
     QJsonArray remote_servers = opts.remote_servers;
     for (int i = 0; i < remote_servers.count(); i++) {
-        QJsonObject server0 = remote_servers[i].toObject();
-        QString host = server0["host"].toString();
-        int port = server0["port"].toInt();
-        QString url_path = server0["path"].toString();
-        QString passcode = server0["passcode"].toString();
-        QString url0 = host + ":" + QString::number(port) + url_path + QString("/?a=locate&checksum=%1&fcs=%2&size=%3&passcode=%4").arg(checksum).arg(fcs_optional).arg(size).arg(passcode);
+        //QJsonObject server0 = remote_servers[i].toObject();
+        //QString host = server0["host"].toString();
+        //int port = server0["port"].toInt();
+        //QString url_path = server0["path"].toString();
+        //QString passcode = server0["passcode"].toString();
+        //QString url0 = host + ":" + QString::number(port) + url_path + QString("/?a=locate&checksum=%1&fcs=%2&size=%3&passcode=%4").arg(checksum).arg(fcs_optional).arg(size).arg(passcode);
+        QString server_url = remote_servers[i].toString();
+        QJsonArray prv_servers = MLUtil::configValue("prv", "servers").toArray();
+        for (int k = 0; k < prv_servers.count(); k++) {
+            QJsonObject obj = prv_servers[k].toObject();
+            if (obj["name"].toString() == server_url) {
+                server_url = obj["host"].toString() + obj["port"].toString();
+            }
+        }
+        QString url0 = server_url + QString("/prvbucket?a=locate&checksum=%1&size=%2&fcs=%3").arg(checksum).arg(size).arg(fcs_optional);
         if (opts.verbose) {
             printf("%s\n", url0.toUtf8().data());
         }
         QString txt = http_get_text_curl_0(url0);
-        if (!txt.isEmpty()) {
+        return txt;
+        /*if (!txt.isEmpty()) {
             if (!txt.contains(" ")) { //filter out error messages (good idea, or not?)
                 if (!is_url(txt)) {
                     txt = host + ":" + QString::number(port) + url_path + "/" + txt;
@@ -433,6 +443,7 @@ QString PrvFilePrivate::find_remote_file(int size, const QString& checksum, cons
                 return txt;
             }
         }
+        */
     }
     return "";
 }
@@ -446,7 +457,7 @@ QString PrvFilePrivate::find_file(bigint size, const QString& checksum, const QS
         obj0["original_checksum"] = checksum;
         obj0["original_size"] = (long long)size;
         obj0["original_fcs"] = fcs_optional;
-        QString local_fname = MLUtil::locatePrv(obj0);
+        QString local_fname = MLUtil::locatePrv(obj0, opts.local_search_paths);
         //QString local_fname = find_local_file(size, checksum, fcs_optional, opts);
         if (!local_fname.isEmpty()) {
             if (opts.verbose) {

@@ -53,6 +53,7 @@ common.foreach=function(array,opts,step_function,end_function) {
 	}
 };
 
+var mp_exec_process_timers={};
 common.mp_exec_process=function(processor_name,inputs,outputs,params,callback) {
 	var exe='mountainprocess';
 	var args=['exec-process',processor_name];
@@ -76,15 +77,26 @@ common.mp_exec_process=function(processor_name,inputs,outputs,params,callback) {
 				args.push('--'+key+'='+val[j]);
 		}
 	}
+	var timer0=new Date();
 	common.make_system_call(exe,args,{show_stdout:false,show_stderr:false,num_tries:2},function(aa) {
 		if (aa.return_code!=0) {
 			console.error('Subprocess '+processor_name+' returned with a non-zero exit code.');
 			process.exit(-1);
 		}
+		if (!(processor_name in mp_exec_process_timers))
+			mp_exec_process_timers[processor_name]=0;
+		mp_exec_process_timers[processor_name]+=((new Date())-timer0);
 		aa.processor_name=processor_name;
 		callback(aa);
 	});
 };
+
+common.print_mp_exec_process_timers=function() {
+	console.log('Total mp process times')
+	for (var key in mp_exec_process_timers) {
+		console.log(key+': '+mp_exec_process_timers[key]/1000+' sec');
+	}
+}
 
 common.CLParams=function(argv) {
 	this.unnamedParameters=[];
@@ -142,10 +154,13 @@ common.read_mda_header=function(path,callback) {
 	});
 };
 
-common.locks={};
+common.lock_counts={};
 common.grab_lock=function(lock_name,callback) {
-	if (!common.locks[lock_name]) {
-		common.locks[lock_name]=1;
+	var max_lock_counts=1;
+	if (!common.lock_counts[lock_name])
+		common.lock_counts[lock_name]=0;
+	if (common.lock_counts[lock_name]<max_lock_counts) {
+		common.lock_counts[lock_name]++;
 		callback();
 	}
 	else {
@@ -155,7 +170,7 @@ common.grab_lock=function(lock_name,callback) {
 	}
 };
 common.release_lock=function(lock_name) {
-	common.locks[lock_name]=null;
+	common.lock_counts[lock_name]--;
 };
 
 /*

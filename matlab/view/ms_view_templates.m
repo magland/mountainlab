@@ -25,6 +25,9 @@ if (nargin<1) test_ms_view_templates; return; end;
 if (nargin<2) opts=struct; end;
 if (~isfield(opts,'Tpad')) opts.Tpad=floor(T*0.2); end;
 if ~isfield(opts,'showcenter'), opts.showcenter = 0; end
+if ~isfield(opts,'show_cluster_labels'), opts.show_cluster_labels=1; end;
+if ~isfield(opts,'show_channel_labels'), opts.show_channel_labels=1; end;
+if ~isfield(opts,'line_width'), opts.line_width=1; end;
 
 Tpad=opts.Tpad;
 
@@ -65,6 +68,7 @@ for m=1:M
     tmp=reshape(tmp,1,(T+Tpad)*K);
     tmp(find(tmp==0))=inf;
     hh=plot(tmp+y_offset); hold on;
+    set(hh,'LineWidth',opts.line_width);
     set(hh,'Color',colors{1+mod(m-1,length(colors))});
     y_offset=y_offset-vspread;
 end;
@@ -90,30 +94,34 @@ end
 
 label_color=[0.7,0.7,0.7];  % now do text number labels...
 
-for k=1:K
-  hh=text((T+Tpad)*(k-1)+T/2,vspread/2,sprintf('%d',k));
-  set(hh,'HorizontalAlignment','center');
-  set(hh,'VerticalAlignment','bottom');
-  set(hh,'FontSize',10);
-  set(hh,'Color',label_color);
+if (opts.show_cluster_labels)
+    for k=1:K
+      hh=text((T+Tpad)*(k-1)+T/2,vspread/2,sprintf('%d',k));
+      set(hh,'HorizontalAlignment','center');
+      set(hh,'VerticalAlignment','bottom');
+      set(hh,'FontSize',10);
+      set(hh,'Color',label_color);
+    end;
+
+    if ~isfield(opts,'pops')   % ahb
+      for k=1:K
+        hh=text((T+Tpad)*(k-1)+T/2,-vspread*(M-1)-vspread/2,sprintf('%d',k));
+        set(hh,'HorizontalAlignment','center');
+        set(hh,'VerticalAlignment','top');
+        set(hh,'FontSize',10);
+        set(hh,'Color',label_color);
+      end;
+    end
 end;
 
-if ~isfield(opts,'pops')   % ahb
-  for k=1:K
-    hh=text((T+Tpad)*(k-1)+T/2,-vspread*(M-1)-vspread/2,sprintf('%d',k));
-    set(hh,'HorizontalAlignment','center');
-    set(hh,'VerticalAlignment','top');
-    set(hh,'FontSize',10);
-    set(hh,'Color',label_color);
-  end;
-end
-
-for m=1:M
-    hh=text(-Tpad,-(m-1)*vspread,sprintf('Chan %d',m));
-    set(hh,'HorizontalAlignment','right');
-    set(hh,'VerticalAlignment','middle');
-    set(hh,'FontSize',8);
-    set(hh,'Color',label_color);
+if (opts.show_channel_labels)
+    for m=1:M
+        hh=text(-Tpad,-(m-1)*vspread,sprintf('Chan %d',m));
+        set(hh,'HorizontalAlignment','right');
+        set(hh,'VerticalAlignment','middle');
+        set(hh,'FontSize',8);
+        set(hh,'Color',label_color);
+    end;
 end;
 
 end

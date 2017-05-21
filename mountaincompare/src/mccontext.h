@@ -81,6 +81,7 @@ public:
     /////////////////////////////////////////////////
     DiskReadMda firings1();
     DiskReadMda firings2();
+    DiskReadMda matchedFirings();
     //DiskReadMda firingsMerged();
     void setFirings1(const DiskReadMda& F);
     void setFirings2(const DiskReadMda& F);

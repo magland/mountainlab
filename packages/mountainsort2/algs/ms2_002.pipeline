@@ -90,7 +90,8 @@ function main(params) {
 						timeseries:pre
 					},{quantization_unit:whitening_quantization_unit}
 				).timeseries_out;
-		RemoveIntermediate(old); //save disk space without ruining provenance
+		//there was a bug so removing the following line for now
+		//RemoveIntermediate(old); //save disk space without ruining provenance
 	}
 
 	var firings;

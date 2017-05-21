@@ -153,7 +153,7 @@ Mda32 extract_channels_from_chunk(const Mda32& chunk, const QList<int>& channels
     Mda32 ret(channels.count(), chunk.N2());
     for (bigint i = 0; i < chunk.N2(); i++) {
         for (bigint j = 0; j < channels.count(); j++) {
-            ret.setValue(chunk.value(channels[j] - 1, i), j, i);
+            ret.set(chunk.get(channels[j] - 1, i), j, i);
         }
     }
     return ret;

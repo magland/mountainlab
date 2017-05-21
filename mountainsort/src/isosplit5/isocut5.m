@@ -5,6 +5,7 @@ if (nargin<3), opts=struct; end;
 
 if (~isfield(opts,'already_sorted')) opts.already_sorted=0; end;
 if (~isfield(opts,'return_info')) opts.return_info=[]; end;
+if (~isfield(opts,'num_bins_factor')) opts.num_bins_factor=1; end;
 
 info=struct;
 
@@ -12,7 +13,7 @@ info=struct;
 if (N==0)
     error('Error in isocut5: N is zero.');
 end;
-num_bins_factor=1;
+num_bins_factor=opts.num_bins_factor;
 num_bins=ceil(sqrt(N/2)*num_bins_factor);
 
 if (length(sample_weights)==0), sample_weights=ones(1,N); end;
@@ -24,13 +25,20 @@ else
     sample_weights=sample_weights(sort_inds);
 end;
 
-num_bins_1=ceil(num_bins/2);
-num_bins_2=num_bins-num_bins_1;
-intervals=[1:num_bins_1,num_bins_2:-1:1];
-alpha=(N-1)/sum(intervals);
-intervals=intervals*alpha;
-inds=floor([1,1+cumsum(intervals)]);
-N_sub=length(inds);
+while 1
+    num_bins_1=ceil(num_bins/2);
+    num_bins_2=num_bins-num_bins_1;
+    intervals=[1:num_bins_1,num_bins_2:-1:1];
+    alpha=(N-1)/sum(intervals);
+    intervals=intervals*alpha;
+    inds=floor([1,1+cumsum(intervals)]);
+    N_sub=length(inds);
+    if (min(intervals)>=1)
+        break;
+    else
+        num_bins=num_bins-1;
+    end;
+end;
 
 cumsum_sample_weights=cumsum(sample_weights);
 
@@ -50,7 +58,7 @@ ks_right_index=length(spacings)-ks_right_index+1;
 if (ks_left>ks_right)
     critical_range=1:ks_left_index;
     dip_score=ks_left;
-    else1
+else
     critical_range=ks_right_index:length(spacings);
     dip_score=ks_right;
 end;
@@ -65,6 +73,7 @@ cutpoint_ind=critical_range(1)+cutpoint_ind-1;
 cutpoint=(X_sub(cutpoint_ind)+X_sub(cutpoint_ind+1))/2;
 
 if (opts.return_info)
+    info.spacings=spacings;
     info.lefts=X_sub(1:end-1);
     info.rights=X_sub(2:end);
     info.centers=(info.lefts+info.rights)/2;
@@ -85,6 +94,7 @@ if (opts.return_info)
     %info.plot_densities_bimodal(1:2:end)=info.densities_bimodal;
     %info.plot_densities_bimodal(2:2:end)=info.densities_bimodal;
     [counts,info.hist_bins]=hist_with_weights(samples,sample_weights,num_bins*3);
+    info.hist_counts=counts;
     info.hist_densities=counts/(info.hist_bins(2)-info.hist_bins(1));
 else
     info=struct;

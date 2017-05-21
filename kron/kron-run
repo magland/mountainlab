@@ -207,6 +207,22 @@ function run_pipeline(pipeline,dataset,callback) {
 		}
 	}
 
+	var params00={};
+	for (var key in dataset.dataset_params) {
+		params00[key]=dataset.dataset_params[key];
+	}
+	for (var key in pipeline.pipeline_params) {
+		params00[key]=pipeline.pipeline_params[key];
+	}
+	for (var key in params00) {
+		args+=' --'+key+'='+params00[key];
+	}
+
+	console.log('+++++++++++++++++++++++++++++++++++++++++++');
+	console.log(JSON.stringify(dataset));
+	console.log(JSON.stringify(pipeline));
+
+	/*
 	{
 		var arguments0=dataset.arguments;
 		for (var i in arguments0) {
@@ -219,6 +235,7 @@ function run_pipeline(pipeline,dataset,callback) {
 			args+=' '+arguments0[i];
 		}
 	}
+	*/
 
 	if ('_force_run' in CLP.namedParameters) {
 		args+=' --_force_run';
@@ -243,6 +260,9 @@ function run_pipeline(pipeline,dataset,callback) {
 	}
 	args+=' --outpath='+outpath0;
 	args+=' --_script_output='+outpath0+'/pipeline_output.json';
+
+	console.log('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+	console.log(JSON.stringify(args));
 
 	args=args.split(' ');
 	if (return_immediately) {

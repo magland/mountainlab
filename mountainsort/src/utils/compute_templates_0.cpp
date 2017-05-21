@@ -8,6 +8,8 @@
 #include "mlcommon.h"
 #include "mlcommon.h"
 #include <math.h>
+#include "get_sort_indices.h"
+#include "omp.h"
 
 Mda compute_templates_0(const DiskReadMda& X, Mda& firings, int clip_size)
 {
@@ -72,6 +74,76 @@ Mda compute_templates_0(const DiskReadMda& X, const QVector<double>& times, cons
     }
 
     return templates;
+}
+
+void get_sums_and_counts_for_templates(Mda& sums, Mda& counts, const Mda32& X, bigint t_offset, const QVector<double>& times, const QVector<int>& labels, int clip_size, int K)
+{
+    int M = X.N1();
+    bigint N = X.N2();
+    int T = clip_size;
+    int Tmid = (int)((T + 1) / 2) - 1;
+    sums.allocate(M, T, K);
+    counts.allocate(1, K);
+    for (bigint i = 0; i < times.count(); i++) {
+        bigint t = times[i] - t_offset;
+        if ((t >= clip_size) && (t < N - clip_size)) {
+            int k = labels[i];
+            if ((k >= 1) && (k <= K)) {
+                Mda32 clip;
+                X.getChunk(clip, 0, t - Tmid, M, T);
+                for (int t = 0; t < T; t++) {
+                    for (int m = 0; m < M; m++) {
+                        sums.setValue(sums.value(m, t, k - 1) + clip.value(m, t), m, t, k - 1);
+                    }
+                }
+                counts.set(counts.get(k - 1) + 1, k - 1);
+            }
+        }
+    }
+}
+
+Mda32 compute_templates_in_parallel(const DiskReadMda32& X, const QVector<double>& times, const QVector<int>& labels, int clip_size)
+{
+    int M = X.N1();
+    bigint N = X.N2();
+    int T = clip_size;
+    int K = MLCompute::max<int>(labels);
+
+    Mda sums(M, T, K);
+    Mda counts(1, K);
+
+    bigint chunk_size = 1e5;
+#pragma omp parallel for
+    for (bigint t = 0; t < N; t += chunk_size) {
+        Mda32 chunk;
+#pragma omp critical
+        {
+            X.readChunk(chunk, 0, t - clip_size, M, chunk_size + 2 * clip_size);
+        }
+        Mda sums0;
+        Mda counts0;
+        get_sums_and_counts_for_templates(sums0, counts0, chunk, t - clip_size, times, labels, clip_size, K);
+#pragma omp critical
+        {
+            for (bigint i = 0; i < M * T * K; i++) {
+                sums.set(sums.get(i) + sums0.get(i), i);
+            }
+            for (int i = 0; i < K; i++) {
+                counts.set(counts.get(i) + counts0.get(i), i);
+            }
+        }
+    }
+    Mda32 ret(M, T, K);
+    for (int k = 0; k < K; k++) {
+        if (counts.get(k)) {
+            for (int t = 0; t < T; t++) {
+                for (int m = 0; m < M; m++) {
+                    ret.setValue(sums.value(m, t, k) / counts.get(k), m, t, k);
+                }
+            }
+        }
+    }
+    return ret;
 }
 
 Mda32 compute_templates_0(const DiskReadMda32& X, const QVector<double>& times, const QVector<int>& labels, int clip_size)

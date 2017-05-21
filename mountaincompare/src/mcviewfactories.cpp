@@ -152,6 +152,59 @@ MVAbstractView* MVTimeSeriesView2Factory::createView(MVAbstractContext* context)
     return X;
 }
 
+MVTimeSeriesViewIntersectFactory::MVTimeSeriesViewIntersectFactory(MVMainWindow* mw, QObject* parent)
+    : MVAbstractViewFactory(mw, parent)
+{
+}
+
+QString MVTimeSeriesViewIntersectFactory::id() const
+{
+    return QStringLiteral("open-timeseries-data-intersect");
+}
+
+QString MVTimeSeriesViewIntersectFactory::name() const
+{
+    return tr("Timeseries Data Intersect");
+}
+
+QString MVTimeSeriesViewIntersectFactory::title() const
+{
+    return tr("Timeseries Intersect");
+}
+
+MVAbstractViewFactory::PreferredOpenLocation MVTimeSeriesViewIntersectFactory::preferredOpenLocation() const
+{
+    return PreferredOpenLocation::North;
+}
+
+MVAbstractView* MVTimeSeriesViewIntersectFactory::createView(MVAbstractContext* context)
+{
+    MCContext* c = qobject_cast<MCContext*>(context);
+    Q_ASSERT(c);
+
+    MVTimeSeriesView2* X = new MVTimeSeriesView2(c->mvContext1());
+    //QList<int> ks = c->mvContext1()->selectedClusters();
+    QSet<int> ks1 = c->mvContext1()->selectedClusters().toSet();
+    QSet<int> ks2 = c->mvContext2()->selectedClusters().toSet();
+    if (ks1.isEmpty())
+        ks1.insert(0);
+    if (ks2.isEmpty())
+        ks2.insert(0);
+    //X->setLabelsToView(ks.toSet());
+    DiskReadMda matched_firings = c->matchedFirings();
+    QList<MVEvent> events; //change MVEvent to MVSpecialEvent so we can put on a special label
+    for (bigint i = 0; i < matched_firings.N2(); i++) {
+        int k1 = matched_firings.value(2, i);
+        int k2 = matched_firings.value(3, i);
+        if ((ks1.contains(k1)) && (ks2.contains(k2))) {
+            double t0 = matched_firings.value(1, i);
+            events << MVEvent(t0, 0);
+        }
+    }
+    X->addSpecialEvents(events);
+    return X;
+}
+
 ////////////////////////////////////////////////////////////////////////
 MVSpikeSpray1Factory::MVSpikeSpray1Factory(MVMainWindow* mw, QObject* parent)
     : MVAbstractViewFactory(mw, parent)

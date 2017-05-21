@@ -11,6 +11,6 @@ var pipelines=common.read_pipelines_from_text_file(pipelines_path);
 for (var i in pipelines) {
 	var PP=pipelines[i];
 	//console.log(JSON.stringify(PP));
-	console.log(PP.name+': '+PP.absolute_script_path+'  '+JSON.stringify(PP.arguments));
+	console.log(PP.name+': '+PP.absolute_script_path+'  '+JSON.stringify(PP.pipeline_params));
 }
 

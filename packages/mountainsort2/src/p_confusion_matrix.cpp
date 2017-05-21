@@ -79,7 +79,7 @@ bool p_confusion_matrix(QString firings1, QString firings2, QString confusion_ma
     int K1 = compute_max_label(events1);
     int K2 = compute_max_label(events2);
 
-    // Count up every pair that satisfies opts.max_matching_offset -- and I mean EVERY PAIR
+    // Count up every pair that satisfies opts.max_matching_offset -- but don't count redundantly
     printf("Counting all pairs...\n");
     bigint total_counts[K1 + 1][K2 + 1];
     {
@@ -92,89 +92,180 @@ bool p_confusion_matrix(QString firings1, QString firings2, QString confusion_ma
         bigint i2 = 0;
         for (bigint i1 = 0; i1 < events1.count(); i1++) {
             if (events1[i1].label > 0) {
+                int present[K2 + 1];
+                for (int k2 = 0; k2 < K2 + 1; k2++) {
+                    present[k2] = 0;
+                }
                 double t1 = events1[i1].time;
                 while ((i2 < events2.count()) && (events2[i2].time < t1 - opts.max_matching_offset))
                     i2++;
                 bigint old_i2 = i2;
                 while ((i2 < events2.count()) && (events2[i2].time <= t1 + opts.max_matching_offset)) {
                     if (events2[i2].label > 0) {
-                        total_counts[events1[i1].label][events2[i2].label]++;
+                        present[events2[i2].label] = 1;
                     }
                     i2++;
                 }
                 i2 = old_i2;
+                for (int kk = 1; kk <= K2; kk++) {
+                    if (present[kk])
+                        total_counts[events1[i1].label][kk]++;
+                }
             }
         }
     }
 
-    // Count up just the events in firings2, this will be used to normalize the match score -- but don't worry, the thing is still symmetric, see below
-    printf("Counting events in firings2...\n");
+    printf("Counting events in firings2 to normalize the scores...\n");
     bigint total_events2_counts[K2 + 1];
     for (int k2 = 0; k2 < K2 + 1; k2++) {
         total_events2_counts[k2] = 0;
     }
-    for (bigint i2 = 0; i2 < events2.count(); i2++) {
-        if (events2[i2].label > 0) {
-            total_events2_counts[events2[i2].label]++;
+    for (int k2 = 1; k2 <= K2; k2++) {
+        for (int k1 = 1; k1 <= K1; k1++) {
+            total_events2_counts[k2] += total_counts[k1][k2];
         }
+    }
+
+    bigint total_events1_counts[K1 + 1];
+    for (int k1 = 0; k1 < K1 + 1; k1++) {
+        total_events1_counts[k1] = 0;
+    }
+    for (int k1 = 1; k1 <= K1; k1++) {
+        for (int k2 = 1; k2 <= K2; k2++) {
+            total_events1_counts[k1] += total_counts[k1][k2];
+        }
+    }
+
+    std::vector<bigint> assignments1(events1.count(), -1);
+    std::vector<bigint> assignments2(events2.count(), -1);
+    int max_passes = 10;
+    for (int pass = 1; pass <= max_passes; pass++) {
+        printf("pass %d...\n", pass);
+        std::vector<bigint> assignments1_thispass(events1.count(), -1);
+        std::vector<bigint> assignments2_thispass(events2.count(), -1);
+        { //first fill in the assignments1_thispass
+            bigint i2 = 0;
+            for (bigint i1 = 0; i1 < events1.count(); i1++) {
+                if ((events1[i1].label > 0) && (assignments1[i1] < 0)) { // only consider it if it has a label and hasn't been assigned
+                    double t1 = events1[i1].time; // this is the timepoint for event 1
+
+                    //increase i2 until it reaches the lefthand constraint (we assume we are coming from the left)
+                    while ((i2 < events2.count()) && (events2[i2].time < t1 - opts.max_matching_offset))
+                        i2++;
+                    bigint old_i2 = i2; //save this index for later so we can return to this spot for the next event
+
+                    double best_match_score = 0;
+                    double abs_offset_of_best_match_score = opts.max_matching_offset + 1;
+                    bigint best_i2 = -1;
+                    //move through the events in firings2 until we pass the righthand constraint
+                    while ((i2 < events2.count()) && (events2[i2].time <= t1 + opts.max_matching_offset)) {
+                        if ((events2[i2].label > 0) && (assignments2[i2] < 0)) { //only consider it if it has a label and unassigned
+                            double time0 = events2[i2].time;
+                            bigint numer = total_counts[events1[i1].label][events2[i2].label]; //this is the count between the two labels
+                            //normalize by the sum of the total number of i1 and i2 events
+                            double denom1 = total_events1_counts[events1[i1].label];
+                            double denom2 = total_events2_counts[events2[i2].label];
+                            double denom = denom1 + denom2 - numer;
+                            if (!denom)
+                                denom = 1; //don't divide by zero!
+                            double match_score = numer / denom;
+
+                            if (match_score >= best_match_score) {
+                                double abs_offset = fabs(time0 - t1);
+                                //in the case of a tie, use the one that is closer in offset.
+                                if ((match_score > best_match_score) || ((match_score == best_match_score) && (abs_offset < abs_offset_of_best_match_score))) {
+                                    best_match_score = match_score;
+                                    best_i2 = i2;
+                                    abs_offset_of_best_match_score = abs_offset;
+                                }
+                            }
+                        }
+                        i2++; // go to the next one
+                    }
+                    if (best_i2 >= 0) {
+                        assignments1_thispass[i1] = best_i2;
+                    }
+                    i2 = old_i2; // go back so we are ready to handle the next event
+                }
+            }
+        }
+        { //next fill in the assignments2_thispass
+            bigint i1 = 0;
+            for (bigint i2 = 0; i2 < events2.count(); i2++) {
+                if ((events2[i2].label > 0) && (assignments2[i2] < 0)) { // only consider it if it has a label and hasn't been assigned
+                    double t2 = events2[i2].time; // this is the timepoint for event 2
+
+                    //increase i1 until it reaches the lefthand constraint (we assume we are coming from the left)
+                    while ((i1 < events1.count()) && (events1[i1].time < t2 - opts.max_matching_offset))
+                        i1++;
+                    bigint old_i1 = i1; //save this index for later so we can return to this spot for the next event
+
+                    double best_match_score = 0;
+                    double abs_offset_of_best_match_score = opts.max_matching_offset + 1;
+                    bigint best_i1 = -1;
+                    //move through the events in firings2 until we pass the righthand constraint
+                    while ((i1 < events1.count()) && (events1[i1].time <= t2 + opts.max_matching_offset)) {
+                        if ((events1[i1].label > 0) && (assignments1[i1] < 0)) { //only consider it if it has a label and unassigned
+                            double time0 = events1[i1].time;
+                            bigint numer = total_counts[events1[i1].label][events2[i2].label]; //this is the count between the two labels
+                            //normalize by the sum of the total number of i1 and i2 events
+                            double denom1 = total_events1_counts[events1[i1].label];
+                            double denom2 = total_events2_counts[events2[i2].label];
+                            double denom = denom1 + denom2 - numer;
+                            if (!denom)
+                                denom = 1; //don't divide by zero!
+                            double match_score = numer / denom;
+
+                            if (match_score >= best_match_score) {
+                                double abs_offset = fabs(time0 - t2);
+                                //in the case of a tie, use the one that is closer in offset.
+                                if ((match_score > best_match_score) || ((match_score == best_match_score) && (abs_offset < abs_offset_of_best_match_score))) {
+                                    best_match_score = match_score;
+                                    best_i1 = i1;
+                                    abs_offset_of_best_match_score = abs_offset;
+                                }
+                            }
+                        }
+                        i1++; // go to the next one
+                    }
+                    if (best_i1 >= 0) {
+                        assignments2_thispass[i2] = best_i1;
+                    }
+                    i1 = old_i1; // go back so we are ready to handle the next event
+                }
+            }
+        }
+        //use only those where assignments1_thispass agrees with assignments2_thispass
+        bool something_changed = false;
+        for (bigint i1 = 0; i1 < events1.count(); i1++) {
+            if (assignments1_thispass[i1] >= 0) {
+                if (assignments2_thispass[assignments1_thispass[i1]] == i1) {
+                    assignments1[i1] = assignments1_thispass[i1];
+                    assignments2[assignments1_thispass[i1]] = i1;
+                    something_changed = true;
+                }
+            }
+        }
+        if (!something_changed)
+            break;
     }
 
     printf("Creating list of merged events...\n");
     // Create the list of matched events
     QList<MFMergeEvent> events3;
-    {
-        // This will be the index in firings2
-        bigint i2 = 0;
-        // Loop through all of the events in firings1
-        for (bigint i1 = 0; i1 < events1.count(); i1++) {
-            if (events1[i1].label > 0) { // only consider it if it has a label
-                double t1 = events1[i1].time; // this is the timepoint for event 1
-
-                //increase i2 until it reaches the lefthand constraint (we assume we are coming from the left)
-                while ((i2 < events2.count()) && (events2[i2].time < t1 - opts.max_matching_offset))
-                    i2++;
-                bigint old_i2 = i2; //save this index for later so we can return to this spot for the next event
-
-                double best_match_score = 0;
-                double abs_offset_of_best_match_score = opts.max_matching_offset + 1;
-                bigint best_i2 = -1;
-                //move through the events in firings2 until we pass the righthand constraint
-                while ((i2 < events2.count()) && (events2[i2].time <= t1 + opts.max_matching_offset)) {
-                    if (events2[i2].label > 0) { //only consider it if it has a label
-                        //total_counts[events1[i1].label][events2[i2].label]++; //oh boy this was a mistake. Commented out on 10/13/16 by jfm
-                        bigint numer = total_counts[events1[i1].label][events2[i2].label]; //this is the count between the two labels
-                        double denom = total_events2_counts[events2[i2].label]; //normalize by the total number of label2
-                        //note that we don't need to normalize by events1_counts because the event1 is the same for all these guys!
-                        if (denom < 50)
-                            denom = 50; //let's make sure it is something reasonable! -- if something doesnt fire very often we don't want to give it a super high score just because of a low denominator
-                        double match_score = numer / denom; //normalize the match score -- which is not what we did in the past. changed on 10/13/16 by jfm
-                        if (match_score >= best_match_score) {
-                            double abs_offset = fabs(events2[i2].time - t1);
-                            //in the case of a tie, use the one that is closer in offset.
-                            if ((match_score > best_match_score) || ((match_score == best_match_score) && (abs_offset < abs_offset_of_best_match_score))) {
-                                best_match_score = match_score;
-                                best_i2 = i2;
-                                abs_offset_of_best_match_score = abs_offset;
-                            }
-                        }
-                    }
-                    i2++; // go to the next one
-                }
-                if (best_i2 >= 0) {
-                    // Create the merge event if there is something that matched
-                    MFMergeEvent E;
-                    E.chan = events1[i1].chan;
-                    E.time = events1[i1].time;
-                    E.label1 = events1[i1].label;
-                    E.label2 = events2[best_i2].label;
-                    events3 << E;
-                    events1[i1].time = -1;
-                    events1[i1].label = -1; //set to -1 , see below
-                    events2[best_i2].time = -1;
-                    events2[best_i2].label = -1;
-                }
-                i2 = old_i2; // go back so we are ready to handle the next event
-            }
+    for (bigint i1 = 0; i1 < events1.count(); i1++) {
+        if (assignments1[i1] >= 0) {
+            bigint i2 = assignments1[i1];
+            MFMergeEvent E;
+            E.chan = events1[i1].chan;
+            E.time = events1[i1].time;
+            E.label1 = events1[i1].label;
+            E.label2 = events2[i2].label;
+            events3 << E;
+            events1[i1].time = -1;
+            events1[i1].label = -1; //set to -1 , see below
+            events2[i2].time = -1;
+            events2[i2].label = -1;
         }
     }
 

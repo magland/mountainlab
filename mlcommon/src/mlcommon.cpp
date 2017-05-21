@@ -902,9 +902,19 @@ QJsonValue MLUtil::configValue(const QString& group, const QString& key)
     return ret;
 }
 
+QStringList get_local_search_paths()
+{
+    QStringList local_search_paths = MLUtil::configResolvedPathList("prv", "local_search_paths");
+    QString temporary_path = MLUtil::tempPath();
+    if (!temporary_path.isEmpty()) {
+        local_search_paths << temporary_path;
+    }
+    return local_search_paths;
+}
+
 QString locate_prv(const QJsonObject& obj)
 {
-    return MLUtil::locatePrv(obj);
+    return MLUtil::locatePrv(obj, get_local_search_paths());
     /*
     QString path0 = obj["original_path"].toString();
     QString checksum0 = obj["original_checksum"].toString();
@@ -1141,16 +1151,6 @@ QString find_directory_in_search_paths(const QJsonObject& obj, const QStringList
     return "";
 }
 
-QStringList get_local_search_paths()
-{
-    QStringList local_search_paths = MLUtil::configResolvedPathList("prv", "local_search_paths");
-    QString temporary_path = MLUtil::tempPath();
-    if (!temporary_path.isEmpty()) {
-        local_search_paths << temporary_path;
-    }
-    return local_search_paths;
-}
-
 QString find_file_2(QString directory, QString checksum, QString fcs_optional, bigint size, bool recursive, bool verbose)
 {
     QStringList files = QDir(directory).entryList(QStringList("*"), QDir::Files, QDir::Name);
@@ -1213,7 +1213,7 @@ QString find_local_file(bigint size, const QString& checksum, const QString& fcs
     return "";
 }
 
-QString MLUtil::locatePrv(const QJsonObject& obj)
+QString MLUtil::locatePrv(const QJsonObject& obj, const QStringList& local_search_paths)
 {
     if (obj.contains("original_checksum")) {
         //it is a file
@@ -1232,10 +1232,10 @@ QString MLUtil::locatePrv(const QJsonObject& obj)
                 }
             }
         }
-        return find_local_file(size, checksum, fcs, get_local_search_paths(), false);
+        return find_local_file(size, checksum, fcs, local_search_paths, false);
     }
     else {
-        QStringList search_paths = get_local_search_paths();
+        QStringList search_paths = local_search_paths;
         QString original_path = obj.value("original_path").toString();
         //it is a directory
         if ((QFile::exists(original_path)) && (QFileInfo(original_path).isDir())) {

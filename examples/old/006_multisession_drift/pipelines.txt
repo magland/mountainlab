@@ -1,2 +1,0 @@
-ms2_001 ms2_001.pipeline --subsample_factor=1 --detect_sign=1
-ms2_001_mc ms2_001.pipeline --subsample_factor=1 --multichannel=true --adjacency_radius=100 --detect_sign=1

@@ -55,6 +55,17 @@ public:
     MVAbstractView* createView(MVAbstractContext* context) Q_DECL_OVERRIDE;
 };
 
+class MVTimeSeriesViewIntersectFactory : public MVAbstractViewFactory {
+    Q_OBJECT
+public:
+    MVTimeSeriesViewIntersectFactory(MVMainWindow* mw, QObject* parent = 0);
+    QString id() const Q_DECL_OVERRIDE;
+    QString name() const Q_DECL_OVERRIDE;
+    QString title() const Q_DECL_OVERRIDE;
+    PreferredOpenLocation preferredOpenLocation() const Q_DECL_OVERRIDE;
+    MVAbstractView* createView(MVAbstractContext* context) Q_DECL_OVERRIDE;
+};
+
 /////////////////////////////////////////////////////////////////////////////
 class MVSpikeSpray1Factory : public MVAbstractViewFactory {
     Q_OBJECT

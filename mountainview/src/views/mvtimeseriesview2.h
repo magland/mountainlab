@@ -9,6 +9,7 @@
 
 #include <QWidget>
 #include <diskreadmda.h>
+#include <mvutils.h>
 #include "mvabstractviewfactory.h"
 #include "mvtimeseriesviewbase.h"
 

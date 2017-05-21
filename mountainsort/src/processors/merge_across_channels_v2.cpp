@@ -22,7 +22,7 @@ QList<int> reverse_order(const QList<int>& inds);
 bool merge_across_channels_v2(const QString& timeseries_path, const QString& firings_path, const QString& firings_out_path, const merge_across_channels_v2_opts& opts)
 {
     //Read the input arrays
-    DiskReadMda X(timeseries_path);
+    DiskReadMda32 X(timeseries_path);
     Mda firingsA;
     firingsA.read(firings_path);
 
@@ -44,8 +44,10 @@ bool merge_across_channels_v2(const QString& timeseries_path, const QString& fir
     }
     int K = MLCompute::max<int>(labels);
 
+    printf("Computing templates...\n");
     //compute the average waveforms (aka templates)
-    Mda templates = compute_templates_0(X, times, labels, opts.clip_size);
+    //Mda templates = compute_templates_0(X, times, labels, opts.clip_size);
+    Mda32 templates = compute_templates_in_parallel(X, times, labels, opts.clip_size);
 
     Mda channel_peaks(M, K);
     for (int k = 0; k < K; k++) {
@@ -61,17 +63,23 @@ bool merge_across_channels_v2(const QString& timeseries_path, const QString& fir
         }
     }
 
+    printf("Find candidate pairs to consider...\n");
     //find the candidate pairs for merging
     Mda candidate_pairs(K, K);
+    QList<QVector<int> > all_label_inds;
+    for (int kk = 0; kk < K; kk++) {
+        all_label_inds << find_label_inds(labels, kk + 1);
+    }
     for (int k1 = 0; k1 < K; k1++) {
-        QVector<int> inds1 = find_label_inds(labels, k1 + 1);
-        if (!inds1.isEmpty()) {
+        //QVector<int> inds1 = find_label_inds(labels, k1 + 1);
+        QVector<int>* inds1 = &all_label_inds[k1];
+        if (!inds1->isEmpty()) {
 
             for (int k2 = 0; k2 < K; k2++) {
-                QVector<int> inds2 = find_label_inds(labels, k2 + 1);
-                if (!inds2.isEmpty()) {
-                    int peakchan1 = peakchans[inds1[0]]; //the peak channel should be the same for all events with this labels, so we just need to look at the first one
-                    int peakchan2 = peakchans[inds2[0]];
+                QVector<int>* inds2 = &all_label_inds[k2];
+                if (!inds2->isEmpty()) {
+                    int peakchan1 = peakchans[(*inds1)[0]]; //the peak channel should be the same for all events with this labels, so we just need to look at the first one
+                    int peakchan2 = peakchans[(*inds2)[0]];
                     if (peakchan1 != peakchan2) { //only attempt to merge if the peak channels are different -- that's why it's called "merge_across_channels"
                         double val11 = channel_peaks.value(peakchan1 - 1, k1);
                         double val12 = channel_peaks.value(peakchan2 - 1, k1);
@@ -95,37 +103,56 @@ bool merge_across_channels_v2(const QString& timeseries_path, const QString& fir
     QList<int> inds1 = get_sort_indices(abs_peaks_on_own_channels);
     inds1 = reverse_order(inds1);
 
+    printf("Testing timings of merge candidates...\n");
     int num_removed = 0;
     QList<bool> clusters_to_use;
     for (int k = 0; k < K; k++)
         clusters_to_use << false;
+#pragma omp parallel for
     for (int ii = 0; ii < inds1.count(); ii++) {
-        int ik = inds1[ii];
-        QVector<int> inds_k = find_label_inds(labels, ik + 1);
         QVector<double> times_k;
-        for (int a = 0; a < inds_k.count(); a++) {
-            times_k << times[inds_k[a]];
-        }
         QVector<double> other_times;
-        for (int ik2 = 0; ik2 < K; ik2++) {
-            if (candidate_pairs.value(ik, ik2)) {
-                printf("Merge candidate pair: %d,%d\n", ik + 1, ik2 + 1);
-                if (clusters_to_use[ik2]) { //we are already using the other one
-                    QVector<int> inds_k2 = find_label_inds(labels, ik2 + 1);
-                    for (int a = 0; a < inds_k2.count(); a++) {
-                        other_times << times[inds_k2[a]];
+        bool to_use;
+        int ik;
+#pragma omp critical
+        {
+            ik = inds1[ii];
+            QVector<int> inds_k = find_label_inds(labels, ik + 1);
+
+            for (int a = 0; a < inds_k.count(); a++) {
+                times_k << times[inds_k[a]];
+            }
+
+            for (int ik2 = 0; ik2 < K; ik2++) {
+                if (candidate_pairs.value(ik, ik2)) {
+                    printf("Merge candidate pair: %d,%d\n", ik + 1, ik2 + 1);
+                    if (clusters_to_use[ik2]) { //we are already using the other one
+                        QVector<int> inds_k2 = find_label_inds(labels, ik2 + 1);
+                        for (int a = 0; a < inds_k2.count(); a++) {
+                            other_times << times[inds_k2[a]];
+                        }
                     }
                 }
             }
         }
         if (cluster_is_already_being_used(times_k, other_times, opts)) {
-            clusters_to_use[ik] = false;
-            num_removed++;
+            to_use = false;
         }
         else {
-            clusters_to_use[ik] = true;
+            to_use = true;
+        }
+#pragma omp critical
+        {
+            if (to_use)
+                clusters_to_use[ik] = true;
+            else {
+                clusters_to_use[ik] = false;
+                num_removed++;
+            }
         }
     }
+
+    printf("Eliminating clusters not to use...\n");
 
     //now we eliminate the clusters not to use
     QVector<int> inds_to_use;
@@ -135,6 +162,8 @@ bool merge_across_channels_v2(const QString& timeseries_path, const QString& fir
             inds_to_use << ii;
         }
     }
+
+    printf("Finalizing...\n");
 
     //set the output
     Mda firings_out(firings.N1(), inds_to_use.count());

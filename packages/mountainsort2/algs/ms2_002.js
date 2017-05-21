@@ -193,6 +193,7 @@ exports.run=function(opts,callback) {
     steps.push(function(cb) {
 		//remove the temporary files
 		STEP_cleanup(function() {
+			common.print_mp_exec_process_timers();
 			cb();
 		});
 	});

@@ -176,6 +176,7 @@ int main(int argc, char* argv[])
 
     W->registerViewFactory(new MVTimeSeriesView1Factory(W));
     W->registerViewFactory(new MVTimeSeriesView2Factory(W));
+    W->registerViewFactory(new MVTimeSeriesViewIntersectFactory(W));
 
     W->registerViewFactory(new ConfusionMatrixViewFactory(W));
     //W->registerViewFactory(new CompareClustersFactory(W));

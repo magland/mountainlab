@@ -43,6 +43,7 @@ private slots:
     void slot_matrix_view_current_element_changed();
     void slot_update_current_elements_based_on_context();
     void slot_export_csv();
+    void slot_export_mda();
     void slot_update_selected();
 
 private:

@@ -27,9 +27,10 @@ public:
     MCContext* q;
     MVContext* m_mv_context1;
     MVContext* m_mv_context2;
+    MVContext* m_mv_context_intersect;
 
     QMutex m_mutex;
-    bool m_matched_firings_computed = false;
+    //bool m_matched_firings_computed = false;
     //MatchFiringsCalculator m_match_firings_calculator;
 
     /////////////////////////////////////
@@ -328,6 +329,11 @@ DiskReadMda MCContext::firings1()
 DiskReadMda MCContext::firings2()
 {
     return d->m_mv_context2->firings();
+}
+
+DiskReadMda MCContext::matchedFirings()
+{
+    return d->m_matched_firings;
 }
 
 void MCContext::setFirings1(const DiskReadMda& F)

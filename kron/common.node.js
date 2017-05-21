@@ -33,17 +33,29 @@ exports.read_pipelines_from_text_file=function(file_path) {
 					var absolute_script_path=find_absolute_pipeline_script_path(vals[1],path.dirname(file_path)||'.');
 					if (absolute_script_path) {
 						if (vals.length>=2) {
+							var pipeline_params={};
+							for (var k=2; k<vals.length; k++) {
+								var arg0=vals[k];
+								if (arg0.indexOf('--')===0) {
+									arg0=arg0.slice(2);
+									var ind=arg0.indexOf('=');
+									if (ind>=0) {
+										pipeline_params[arg0.slice(0,ind)]=arg0.slice(ind+1);
+									}
+									else {
+										pipeline_params[arg0]='';
+									}
+								}
+							}
 							var pip={
 								name:vals[0],
 								script:vals[1],
 								absolute_script_path:absolute_script_path,
-								arguments:vals.slice(2)
+								pipeline_params:pipeline_params,
+								arguments:[]
 							};
-							var argv=['',''];
-							argv=argv.concat(pip.arguments);
-							var CLP=new common.CLParams(argv);
-							if ('curation' in CLP.namedParameters) {
-								pip.absolute_curation_script_path=find_absolute_pipeline_script_path(CLP.namedParameters.curation,path.dirname(file_path)||'.');
+							if ('curation' in pip.pipeline_params) {
+								pip.absolute_curation_script_path=find_absolute_pipeline_script_path(pip.pipeline_params,path.dirname(file_path)||'.');
 							}
 							else {
 								pip.absolute_curation_script_path='';
@@ -87,12 +99,25 @@ exports.read_datasets_from_text_file=function(file_path) {
 							console.log ('Error parsing json from file: '+params_fname);
 							//console.log (common.read_text_file(params_fname));
 						}
+						for (var k=2; k<vals.length; k++) {
+							var arg0=vals[k];
+							if (arg0.indexOf('--')===0) {
+								arg0=arg0.slice(2);
+								var ind=arg0.indexOf('=');
+								if (ind>=0) {
+									dataset_params[arg0.slice(0,ind)]=arg0.slice(ind+1);
+								}
+								else {
+									dataset_params[arg0]='';
+								}
+							}
+						}
 						datasets.push({
 							name:vals[0],
 							folder:vals[1],
 							absolute_folder_path:absolute_folder_path,
 							dataset_params:dataset_params,
-							arguments:vals.slice(2)
+							arguments:[]
 						});
 					}
 					else {

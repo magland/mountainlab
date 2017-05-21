@@ -126,6 +126,7 @@ private:
 
 namespace PrvCommands {
 
+/*
 class Sha1SumCommand : public MLUtils::ApplicationCommand {
 public:
     QString commandName() const { return QStringLiteral("sha1sum"); }
@@ -160,6 +161,7 @@ private:
         return 0;
     }
 };
+*/
 
 class StatCommand : public MLUtils::ApplicationCommand {
 public:
@@ -190,17 +192,24 @@ private:
     {
         Q_UNUSED(params)
         QString checksum = MLUtil::computeSha1SumOfFile(path);
-        if (checksum.isEmpty())
+        if (checksum.isEmpty()) {
+            QJsonObject obj;
+            obj["error"] = "checksum is empty for " + path;
+            println(QJsonDocument(obj).toJson());
             return -1;
-        QJsonObject obj;
-        obj["checksum"] = checksum;
-        obj["fcs"] = "head1000-" + MLUtil::computeSha1SumOfFileHead(path, 1000);
-        obj["size"] = QFileInfo(path).size();
-        println(QJsonDocument(obj).toJson());
-        return 0;
+        }
+        {
+            QJsonObject obj;
+            obj["checksum"] = checksum;
+            obj["fcs"] = "head1000-" + MLUtil::computeSha1SumOfFileHead(path, 1000);
+            obj["size"] = QFileInfo(path).size();
+            println(QJsonDocument(obj).toJson());
+            return 0;
+        }
     }
 };
 
+/*
 class ListSubserversCommand : public MLUtils::ApplicationCommand {
 public:
     QString commandName() const { return QStringLiteral("list-subservers"); }
@@ -229,7 +238,9 @@ private:
         return 0;
     }
 };
+*/
 
+/*
 class UploadCommand : public MLUtils::ApplicationCommand {
 public:
     UploadCommand() {}
@@ -377,19 +388,17 @@ private:
         //QString ret=MLNetwork::httpPostFileSync(path,url.toString());
         QString ret = MLNetwork::httpPostFileParallelSync(path, url.toString());
 
-        /*
-        QString ret = NetUtils::httpPostFile(url, path, [](qint64 bytesSent, qint64 bytesTotal) {
-                if (bytesTotal == 0) {
-                printf("\33[2K\r");
-                return;
-                }
-                printf("\33[2K\r");
-                unsigned int prc = qRound(50*((double)bytesSent/(double)bytesTotal));
-                for(unsigned int i = 0; i < prc; ++i) printf("#");
-                for(unsigned int i = prc; i < 50; ++i) printf(".");
-                fflush(stdout);
-        });
-        */
+//        QString ret = NetUtils::httpPostFile(url, path, [](qint64 bytesSent, qint64 bytesTotal) {
+//                if (bytesTotal == 0) {
+//                printf("\33[2K\r");
+//                return;
+//                }
+//                printf("\33[2K\r");
+//                unsigned int prc = qRound(50*((double)bytesSent/(double)bytesTotal));
+//                for(unsigned int i = 0; i < prc; ++i) printf("#");
+//                for(unsigned int i = prc; i < 50; ++i) printf(".");
+//                fflush(stdout);
+//        });
 
         if (ret.isEmpty()) {
             qWarning() << "Problem posting file to: " + url.toString();
@@ -412,6 +421,7 @@ private:
     }
     int64_t m_totalSize = 0;
 };
+*/
 
 class CreateCommand : public MLUtils::ApplicationCommand {
 public:
@@ -421,11 +431,6 @@ public:
     {
         parser.addPositionalArgument("source", "Source file or directory name");
         parser.addPositionalArgument("dest", "Destination file or directory name", "[dest]");
-        parser.addOption(QCommandLineOption("create-temporary-files", "if needed, create the associated temporary files"));
-        parser.addOption(QCommandLineOption("ensure-local", "if needed, copy the file to a temporary path so that it is within the search paths of the local machine."));
-        parser.addOption(QCommandLineOption("ensure-remote", "if needed, upload the file to the server. Must specify --server"));
-        parser.addOption(QCommandLineOption("server", "to be used with --ensure-remote", "[server name]"));
-        parser.addOption(QCommandLineOption("raw-only", "to be used with --ensure-local or --ensure-remote"));
     }
     int execute(const QCommandLineParser& parser)
     {
@@ -452,36 +457,13 @@ public:
             return -1;
         }
         QVariantMap params;
-        if (parser.isSet("create-temporary-files")) {
-            params.insert("create-temporary-files", true);
-        }
         if (is_file(src_path)) {
             int ret = create_file_prv(src_path, dst_path, params);
             if (ret != 0)
                 return ret;
-            if (parser.isSet("ensure-local")) {
-                if (!ensure_local(dst_path, parser))
-                    return -1;
-            }
-            if (parser.isSet("ensure-remote")) {
-                if (parser.value("server").isEmpty()) {
-                    println("Error: You must set the server option when using --ensure-remote");
-                    return -1;
-                }
-                if (!ensure_remote(dst_path, parser.value("server"), parser))
-                    return -1;
-            }
             return 0;
         }
         else if (is_folder(src_path)) {
-            if (parser.isSet("ensure-local")) {
-                println("Cannot ensure-local for folders.");
-                return -1;
-            }
-            if (parser.isSet("ensure-remote")) {
-                println("Cannot ensure-remote for folders.");
-                return -1;
-            }
             return create_folder_prv(src_path, dst_path, params);
         }
         else {
@@ -514,27 +496,9 @@ private:
             return -1;
         return 0;
     }
-
-    bool ensure_local(QString prv_fname, const QCommandLineParser& parser)
-    {
-        QString cmd = "prv";
-        QStringList args;
-        args << "ensure-local" << prv_fname;
-        if (parser.isSet("raw-only"))
-            args << "--raw-only";
-        return (QProcess::execute(cmd, args) == 0);
-    }
-    bool ensure_remote(QString prv_fname, QString server, const QCommandLineParser& parser)
-    {
-        QString cmd = "prv";
-        QStringList args;
-        args << "ensure-remote" << prv_fname << "--server=" + server;
-        if (parser.isSet("raw-only"))
-            args << "--raw-only";
-        return (QProcess::execute(cmd, args) == 0);
-    }
 };
 
+/*
 class RecoverCommand : public MLUtils::ApplicationCommand {
 public:
     QString commandName() const { return "recover"; }
@@ -586,10 +550,11 @@ public:
         return 0;
     }
 };
+*/
 
-class LocateDownloadCommand : public MLUtils::ApplicationCommand {
+class LocateOrDownloadCommand : public MLUtils::ApplicationCommand {
 public:
-    LocateDownloadCommand(const QString& cmd)
+    LocateOrDownloadCommand(const QString& cmd)
         : m_cmd(cmd)
     {
     }
@@ -598,29 +563,18 @@ public:
     QString commandName() const { return m_cmd; }
     void prepareParser(QCommandLineParser& parser)
     {
-        if (m_cmd == "locate") {
-            parser.addPositionalArgument("file_name", "PRV file name", "[file_name]");
+        parser.addPositionalArgument("file_name", "PRV file name", "[file_name]");
+        if (m_cmd == "download") {
+            parser.addPositionalArgument("output_file_name", "output file name", "[output_file_name]");
         }
         // --checksum=[] --fcs=[optional] --size=[]
         parser.addOption(QCommandLineOption("checksum", "checksum", "[]"));
         parser.addOption(QCommandLineOption("fcs", "fcs", "[optional]"));
         parser.addOption(QCommandLineOption("original_path", "original_path", "[optional]"));
         parser.addOption(QCommandLineOption("size", "size", "[]"));
-        parser.addOption(QCommandLineOption("server", "name of the server to search", "[server name]"));
+        parser.addOption(QCommandLineOption("search_path", "search_path", "path to search (leave empty to search default locations)"));
+        parser.addOption(QCommandLineOption("server", "server", "[url or name of prvbucket server to search]"));
         parser.addOption(QCommandLineOption("verbose", "verbose"));
-        if (m_cmd == "locate") {
-            parser.addOption(QCommandLineOption("local-only", "do not look on remote servers"));
-        }
-        QCommandLineOption pathOption("path", "path to search", "size");
-
-        /*
-          @ww: Apparently setHidden was not part of Qt 5.5, so I am commenting it out.
-          The Qt5 version packaged for Ubuntu 16.04 appears to be 5.5.
-          And that is what I am using for my Docker testing
-        */
-        //pathOption.setHidden(true);
-
-        parser.addOption(pathOption);
     }
     int execute(const QCommandLineParser& parser)
     {
@@ -663,18 +617,41 @@ public:
         }
         if (obj.contains("original_checksum")) {
             QVariantMap params;
-            if (parser.isSet("path"))
-                params.insert("path", parser.value("path"));
+            if (parser.isSet("search_path"))
+                params.insert("search_path", parser.value("search_path"));
             if (parser.isSet("server"))
                 params.insert("server", parser.value("server"));
-            if (m_cmd == "locate") {
-                bool allow_downloads = true;
-                if (parser.isSet("local-only"))
-                    allow_downloads = false;
-                locate_file(obj, params, allow_downloads, verbose);
+            QString fname_or_url = locate_file(obj, params, verbose);
+            if (fname_or_url.isEmpty()) {
+                println("Unable to locate file");
+                return -1;
             }
-            else
-                download_file(obj, params);
+            if (m_cmd == "locate") {
+                println(fname_or_url);
+            }
+            else {
+                println("download: " + fname_or_url);
+                QString dst_fname = args.value(1);
+                QString cmd;
+                if (is_url(fname_or_url)) {
+                    QString tmp = "";
+                    if (!dst_fname.isEmpty()) {
+                        if (QFileInfo(dst_fname).isDir())
+                            tmp += "-P " + dst_fname;
+                        else
+                            tmp += "-O " + dst_fname;
+                    }
+                    cmd = QString("wget %1 %2").arg(fname_or_url).arg(tmp);
+                }
+                else {
+                    QString tmp = "";
+                    if (!dst_fname.isEmpty())
+                        tmp += "> " + dst_fname;
+                    cmd = QString("cat %1 %2").arg(fname_or_url).arg(tmp);
+                }
+                println(QString("Running: %1").arg(cmd));
+                return system(cmd.toUtf8().data());
+            }
         }
         else {
             //it must be a directory
@@ -686,34 +663,31 @@ public:
 private:
     QString m_cmd;
 
-    int locate_file(const QJsonObject& obj, const QVariantMap& params, bool allow_downloads, bool verbose) const
+    QString locate_file(const QJsonObject& obj, const QVariantMap& params, bool verbose) const
     {
         PrvFile prvf(obj);
         PrvFileLocateOptions opts;
         if (params.contains("server")) {
             opts.search_locally = false;
             opts.search_remotely = true;
-            opts.remote_servers = get_remote_servers(params["server"].toString());
+            opts.remote_servers << params["server"].toString();
         }
-        else if (params.contains("path")) {
+        else if (params.contains("search_path")) {
             opts.search_locally = true;
             opts.search_remotely = false;
-            opts.local_search_paths << params["path"].toString();
+            opts.local_search_paths.clear();
+            opts.local_search_paths << params["search_path"].toString();
         }
         else {
             opts.local_search_paths = get_local_search_paths();
-            opts.search_remotely = allow_downloads;
-            if (allow_downloads) {
-                opts.remote_servers = get_remote_servers();
-            }
+            opts.search_remotely = false;
         }
 
         opts.verbose = verbose;
         QString fname_or_url = prvf.locate(opts);
         if (fname_or_url.isEmpty())
-            return -1;
-        println(fname_or_url);
-        return 0;
+            return "";
+        return fname_or_url;
     }
 
     int locate_directory(const QJsonObject& obj, bool verbose) const
@@ -731,6 +705,7 @@ private:
         return 0;
     }
 
+    /*
     int download_file(const QJsonObject& obj, const QVariantMap& params) const
     {
         PrvFile prvf(obj);
@@ -758,8 +733,10 @@ private:
         }
         return system(cmd.toUtf8().data());
     }
+    */
 };
 
+/*
 QList<QJsonObject> get_all_input_prv_objects(QJsonObject obj)
 {
     QList<QJsonObject> ret;
@@ -833,7 +810,9 @@ QList<PrvFile> extract_raw_only_prv_files(const PrvFile& prv_file)
     }
     return ret;
 }
+*/
 
+/*
 class EnsureLocalRemoteCommand : public MLUtils::ApplicationCommand {
 public:
     EnsureLocalRemoteCommand(QString cmd)
@@ -941,27 +920,25 @@ public:
             }
             ////////////////////////////////////////////////////////////////////////////////
 
-            /*
-            ////////////////////////////////////////////////////////////////////////////////
-            // Next we see whether we can recreate it using local processing, if this option
-            // has been enabled
-            if (parser.isSet("regenerate-if-needed")) {
-                println("Attempting to regenerate file.");
-                QString tmp_path = resolve_prv_file(prv_file.prvFilePath(), false, true);
-                if (!tmp_path.isEmpty()) {
-                    println("Generated file: " + tmp_path);
-                    if (m_cmd == "ensure-remote") {
-                        if (upload_file_to_server(dst_path, server))
-                            break;
-                        else
-                            return -1;
-                    }
-                    else
-                        break;
-                }
-            }
-            ////////////////////////////////////////////////////////////////////////////////
-            */
+//            ////////////////////////////////////////////////////////////////////////////////
+//            // Next we see whether we can recreate it using local processing, if this option
+//            // has been enabled
+//            if (parser.isSet("regenerate-if-needed")) {
+//                println("Attempting to regenerate file.");
+//                QString tmp_path = resolve_prv_file(prv_file.prvFilePath(), false, true);
+//                if (!tmp_path.isEmpty()) {
+//                    println("Generated file: " + tmp_path);
+//                    if (m_cmd == "ensure-remote") {
+//                        if (upload_file_to_server(dst_path, server))
+//                            break;
+//                        else
+//                            return -1;
+//                    }
+//                    else
+//                        break;
+//                }
+//            }
+//            ////////////////////////////////////////////////////////////////////////////////
 
             ////////////////////////////////////////////////////////////////////////////////
             // Next we see whether we can download it if this option has been enabled
@@ -988,27 +965,25 @@ public:
             }
             ////////////////////////////////////////////////////////////////////////////////
 
-            /*
-            ////////////////////////////////////////////////////////////////////////////////
-            // Next we see whether we can use a combination of downloads and processing
-            // if this option has been enabled
-            if (parser.isSet("download-and-regenerate-if-needed")) {
-                println("Attempting to download and regenerate file.");
-                QString tmp_path = resolve_prv_file(prv_file.prvFilePath(), true, true);
-                if (!tmp_path.isEmpty()) {
-                    println("Generated file: " + tmp_path);
-                    if (m_cmd == "ensure-remote") {
-                        if (upload_file_to_server(dst_path, server))
-                            break;
-                        else
-                            return -1;
-                    }
-                    else
-                        break;
-                }
-            }
-            ////////////////////////////////////////////////////////////////////////////////
-            */
+//            ////////////////////////////////////////////////////////////////////////////////
+//            // Next we see whether we can use a combination of downloads and processing
+//            // if this option has been enabled
+//            if (parser.isSet("download-and-regenerate-if-needed")) {
+//                println("Attempting to download and regenerate file.");
+//                QString tmp_path = resolve_prv_file(prv_file.prvFilePath(), true, true);
+//                if (!tmp_path.isEmpty()) {
+//                    println("Generated file: " + tmp_path);
+//                    if (m_cmd == "ensure-remote") {
+//                        if (upload_file_to_server(dst_path, server))
+//                            break;
+//                        else
+//                            return -1;
+//                    }
+//                    else
+//                        break;
+//                }
+//            }
+//            ////////////////////////////////////////////////////////////////////////////////
 
             println("Unable to find file on local machine. Original path: " + prv_file.originalPath());
             return -1;
@@ -1028,6 +1003,7 @@ private:
         return (QProcess::execute(cmd, args) == 0);
     }
 };
+*/
 
 } // namespace PrvCommands
 
@@ -1079,16 +1055,16 @@ int main(int argc, char* argv[])
     CacheManager::globalInstance()->setLocalBasePath(get_tmp_path());
 
     MLUtils::ApplicationCommandParser cmdParser;
-    cmdParser.addCommand(new PrvCommands::Sha1SumCommand);
+    //cmdParser.addCommand(new PrvCommands::Sha1SumCommand);
     cmdParser.addCommand(new PrvCommands::StatCommand);
     cmdParser.addCommand(new PrvCommands::CreateCommand);
-    cmdParser.addCommand(new PrvCommands::LocateDownloadCommand("locate"));
-    cmdParser.addCommand(new PrvCommands::LocateDownloadCommand("download"));
-    cmdParser.addCommand(new PrvCommands::RecoverCommand);
-    cmdParser.addCommand(new PrvCommands::ListSubserversCommand);
-    cmdParser.addCommand(new PrvCommands::UploadCommand);
-    cmdParser.addCommand(new PrvCommands::EnsureLocalRemoteCommand("ensure-local"));
-    cmdParser.addCommand(new PrvCommands::EnsureLocalRemoteCommand("ensure-remote"));
+    cmdParser.addCommand(new PrvCommands::LocateOrDownloadCommand("locate"));
+    cmdParser.addCommand(new PrvCommands::LocateOrDownloadCommand("download"));
+    //cmdParser.addCommand(new PrvCommands::RecoverCommand);
+    //cmdParser.addCommand(new PrvCommands::ListSubserversCommand);
+    //cmdParser.addCommand(new PrvCommands::UploadCommand);
+    //cmdParser.addCommand(new PrvCommands::EnsureLocalRemoteCommand("ensure-local"));
+    //cmdParser.addCommand(new PrvCommands::EnsureLocalRemoteCommand("ensure-remote"));
     if (!cmdParser.process(app)) {
         return cmdParser.result();
     }

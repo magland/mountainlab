@@ -279,7 +279,7 @@ QJsonObject get_spec()
         processors.push_back(X.get_spec());
     }
     {
-        ProcessorSpec X("mountainsort.confusion_matrix", "0.13");
+        ProcessorSpec X("mountainsort.confusion_matrix", "0.14f");
         X.addInputs("firings1", "firings2");
         X.addOutputs("confusion_matrix_out");
         X.addOptionalOutputs("matched_firings_out", "label_map_out", "firings2_relabeled_out", "firings2_relabel_map_out");

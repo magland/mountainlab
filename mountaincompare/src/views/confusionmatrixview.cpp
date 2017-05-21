@@ -153,6 +153,12 @@ ConfusionMatrixView::ConfusionMatrixView(MVAbstractContext* mvcontext)
         QObject::connect(A, SIGNAL(triggered(bool)), this, SLOT(slot_export_csv()));
         this->addAction(A);
     }
+    {
+        QAction* A = new QAction(QString("Export .mda"), this);
+        //A->setProperty("action_type", "toolbar");
+        QObject::connect(A, SIGNAL(triggered(bool)), this, SLOT(slot_export_mda()));
+        this->addAction(A);
+    }
 
     //Important to do a queued connection here! because we are changing two things at the same time
     QObject::connect(mcContext(), SIGNAL(currentClusterChanged()), this, SLOT(slot_update_current_elements_based_on_context()), Qt::QueuedConnection);
@@ -339,6 +345,16 @@ void ConfusionMatrixView::slot_export_csv()
     if (fname.isEmpty())
         return;
     TextFile::write(fname, txt);
+}
+
+void ConfusionMatrixView::slot_export_mda()
+{
+    Mda CM = d->m_matrix_view->matrix();
+
+    QString fname = QFileDialog::getSaveFileName(this, "Save confusion matrix data", "", "*.mda");
+    if (fname.isEmpty())
+        return;
+    CM.write64(fname);
 }
 
 void ConfusionMatrixView::slot_update_selected()

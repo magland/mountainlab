@@ -9,6 +9,7 @@
 
 #include <QWidget>
 #include <diskreadmda.h>
+#include <mvutils.h>
 #include "mvabstractview.h"
 
 struct mvtsv_colors {
@@ -55,6 +56,8 @@ public:
     void setActivated(bool val);
     void setMarkersVisible(bool val);
     void setMargins(double mleft, double mright, double mtop, double mbottom);
+
+    void addSpecialEvents(const QList<MVEvent>& events);
 
     void setClipSize(int clip_size); //for when viewing clips
 

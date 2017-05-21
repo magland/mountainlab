@@ -33,7 +33,7 @@ bool p_whiten(QString timeseries, QString timeseries_out, Whiten_opts opts)
     bigint M = X.N1();
     bigint N = X.N2();
 
-    bigint processing_chunk_size = 1e7;
+    bigint processing_chunk_size = 1e5; //changed from 1e7 to 1e5 by jfm (do ensure we are using all threads for short datasets with large numbers of channels)
 
     Mda XXt(M, M);
     double* XXtptr = XXt.dataPtr();

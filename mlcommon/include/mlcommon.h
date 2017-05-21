@@ -56,7 +56,7 @@ QString configResolvedPath(const QString& group, const QString& key);
 QStringList configResolvedPathList(const QString& group, const QString& key);
 QStringList toStringList(const QVariant& val); //val is either a string or a QVariantList
 QJsonObject createPrvObject(const QString& file_or_dir_path);
-QString locatePrv(const QJsonObject& obj);
+QString locatePrv(const QJsonObject& obj, const QStringList& local_search_paths);
 };
 
 namespace MLCompute {
