@@ -37,6 +37,10 @@ exports.spec=function() {
 	spec0.parameters.push({name:"fit_stage",optional:true,default_value:'false'});
 	spec0.parameters.push({name:'subsample_factor',optional:true,default_value:1});
 	spec0.parameters.push({name:'channels',optional:true,default_value:''});
+    spec0.parameters.push({name:'isocut_threshold',optional:true,default_value:1});
+    spec0.parameters.push({name:'weighted_pca',optional:true,default_value:0});
+    spec0.parameters.push({name:'remove_outliers',optional:true,default_value:0});
+    spec0.parameters.push({name:"keep_temp",optional:true,default_value:'true'});
 	return common.clone(spec0);
 };
 
@@ -185,12 +189,14 @@ exports.run=function(opts,callback) {
 		});
 	});
 	///////////////////////////////////////////////////////////////
-	steps.push(function(cb) {
+	if (!opts.keep_temp) {
+    steps.push(function(cb) {
 		//remove the temporary files
 		STEP_cleanup(function() {
 			cb();
 		});
 	});
+    }
 	///////////////////////////////////////////////////////////////
 
 	////////////////////////////////////////////////////////
@@ -441,7 +447,12 @@ exports.run=function(opts,callback) {
 		common.mp_exec_process('mountainsort.sort_clips',
 			{clips:clips},
 			{labels_out:labels},
-			{_request_num_threads:opts.num_threads},
+            {   
+                weighted_pca:opts.weighted_pca,
+                isocut_threshold:opts.isocut_threshold,
+                remove_outliers:opts.remove_outliers,
+                _request_num_threads:opts.num_threads
+            },
 			sort_clips_callback
 		);	
 	}

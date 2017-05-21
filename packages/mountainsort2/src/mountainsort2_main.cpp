@@ -141,6 +141,9 @@ QJsonObject get_spec()
         ProcessorSpec X("mountainsort.sort_clips", "0.11a");
         X.addInputs("clips");
         X.addOutputs("labels_out");
+        X.addOptionalParameter("isocut_threshold", "", 1.0);
+        X.addOptionalParameter("weighted_pca", "", 0);
+        X.addOptionalParameter("remove_outliers", "", 0);
         //X.addRequiredParameters();
         processors.push_back(X.get_spec());
     }
@@ -430,6 +433,9 @@ int main(int argc, char* argv[])
         QString clips = CLP.named_parameters["clips"].toString();
         QString labels_out = CLP.named_parameters["labels_out"].toString();
         Sort_clips_opts opts;
+        opts.weighted_pca = CLP.named_parameters["weighted_pca"].toInt();
+        opts.remove_outliers = CLP.named_parameters["remove_outliers"].toInt();
+        opts.isocut_threshold = CLP.named_parameters["isocut_threshold"].toDouble();
         ret = p_sort_clips(clips, labels_out, opts);
     }
     else if (arg1 == "mountainsort.reorder_labels") {

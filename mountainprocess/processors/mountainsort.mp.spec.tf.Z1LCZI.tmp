@@ -1,0 +1,1742 @@
+{
+    "processors": [
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp add_noise $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                }
+            ],
+            "name": "add_noise",
+            "outputs": [
+                {
+                    "name": "timeseries_out"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "noise_level",
+                    "optional": false
+                }
+            ],
+            "version": "0.1"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp bandpass_filter $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                }
+            ],
+            "name": "bandpass_filter",
+            "outputs": [
+                {
+                    "name": "timeseries_out"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "samplerate",
+                    "optional": false
+                },
+                {
+                    "name": "freq_min",
+                    "optional": false
+                },
+                {
+                    "name": "freq_max",
+                    "optional": false
+                },
+                {
+                    "name": "freq_wid",
+                    "optional": true
+                }
+            ],
+            "version": "0.21"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp basic_metrics $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                },
+                {
+                    "name": "firings"
+                }
+            ],
+            "name": "basic_metrics",
+            "outputs": [
+                {
+                    "name": "cluster_metrics"
+                },
+                {
+                    "name": "cluster_pair_metrics"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "samplerate",
+                    "optional": false
+                },
+                {
+                    "name": "cluster_numbers",
+                    "optional": true
+                }
+            ],
+            "version": "0.1"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp branch_cluster_v2 $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                },
+                {
+                    "name": "detect"
+                },
+                {
+                    "name": "adjacency_matrix"
+                }
+            ],
+            "name": "branch_cluster_v2",
+            "outputs": [
+                {
+                    "name": "firings_out"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "clip_size",
+                    "optional": false
+                },
+                {
+                    "name": "min_shell_size",
+                    "optional": false
+                },
+                {
+                    "name": "shell_increment",
+                    "optional": false
+                },
+                {
+                    "name": "num_features",
+                    "optional": false
+                },
+                {
+                    "name": "detect_interval",
+                    "optional": false
+                },
+                {
+                    "name": "num_pca_representatives",
+                    "optional": true
+                },
+                {
+                    "name": "consolidation_factor",
+                    "optional": true
+                },
+                {
+                    "name": "num_features2",
+                    "optional": true
+                },
+                {
+                    "name": "isocut_threshold",
+                    "optional": true
+                }
+            ],
+            "version": "0.37"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp cluster_aa $(arguments)",
+            "inputs": [
+                {
+                    "name": "clips"
+                },
+                {
+                    "name": "detect"
+                }
+            ],
+            "name": "cluster_aa",
+            "outputs": [
+                {
+                    "name": "firings_out"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "num_features",
+                    "optional": false
+                },
+                {
+                    "name": "num_features2",
+                    "optional": false
+                },
+                {
+                    "name": "consolidation_factor",
+                    "optional": true
+                },
+                {
+                    "name": "isocut_threshold",
+                    "optional": true
+                },
+                {
+                    "name": "K_init",
+                    "optional": true
+                }
+            ],
+            "version": "0.1"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp cluster_scores $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                },
+                {
+                    "name": "firings"
+                }
+            ],
+            "name": "cluster_scores",
+            "outputs": [
+                {
+                    "name": "cluster_scores"
+                },
+                {
+                    "name": "cluster_pair_scores"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "clip_size",
+                    "optional": false
+                },
+                {
+                    "name": "detect_threshold",
+                    "optional": false
+                },
+                {
+                    "name": "add_noise_level",
+                    "optional": false
+                },
+                {
+                    "name": "cluster_numbers",
+                    "optional": true
+                },
+                {
+                    "name": "max_comparisons_per_cluster",
+                    "optional": true
+                },
+                {
+                    "name": "cluster_scores_only",
+                    "optional": true
+                }
+            ],
+            "version": "0.13"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp combine_firings_files_aa $(arguments)",
+            "inputs": [
+                {
+                    "name": "firings_list"
+                }
+            ],
+            "name": "combine_firings_files_aa",
+            "outputs": [
+                {
+                    "name": "firings_out"
+                }
+            ],
+            "parameters": [
+            ],
+            "version": "0.1"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp compute_amplitudes $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                },
+                {
+                    "name": "firings"
+                }
+            ],
+            "name": "compute_amplitudes",
+            "outputs": [
+                {
+                    "name": "firings_out"
+                }
+            ],
+            "parameters": [
+            ],
+            "version": "0.21"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp compute_detectability_scores $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                },
+                {
+                    "name": "firings"
+                }
+            ],
+            "name": "compute_detectability_scores",
+            "outputs": [
+                {
+                    "name": "firings_out"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "clip_size",
+                    "optional": false
+                },
+                {
+                    "name": "shell_increment",
+                    "optional": false
+                },
+                {
+                    "name": "min_shell_size",
+                    "optional": false
+                }
+            ],
+            "version": "0.1"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp compute_outlier_scores $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                },
+                {
+                    "name": "firings"
+                }
+            ],
+            "name": "compute_outlier_scores",
+            "outputs": [
+                {
+                    "name": "firings_out"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "clip_size",
+                    "optional": false
+                },
+                {
+                    "name": "shell_increment",
+                    "optional": false
+                },
+                {
+                    "name": "min_shell_size",
+                    "optional": false
+                }
+            ],
+            "version": "0.1"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp compute_templates $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                },
+                {
+                    "name": "firings"
+                }
+            ],
+            "name": "compute_templates",
+            "outputs": [
+                {
+                    "name": "templates"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "clip_size",
+                    "optional": false
+                }
+            ],
+            "version": "0.11"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp concat_mda $(arguments)",
+            "inputs": [
+                {
+                    "name": "inputs"
+                }
+            ],
+            "name": "concat_mda",
+            "outputs": [
+                {
+                    "name": "output"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "dimension",
+                    "optional": false
+                }
+            ],
+            "version": "0.11"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp concat_timeseries $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                }
+            ],
+            "name": "concat_timeseries",
+            "outputs": [
+                {
+                    "name": "timeseries_concat"
+                }
+            ],
+            "parameters": [
+            ],
+            "version": "0.1"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp confusion_matrix $(arguments)",
+            "inputs": [
+                {
+                    "name": "firings1"
+                },
+                {
+                    "name": "firings2"
+                }
+            ],
+            "name": "confusion_matrix",
+            "outputs": [
+                {
+                    "name": "output"
+                },
+                {
+                    "name": "optimal_assignments"
+                },
+                {
+                    "name": "event_correspondence"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "max_matching_offset",
+                    "optional": false
+                }
+            ],
+            "version": "0.14"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp copy $(arguments)",
+            "inputs": [
+                {
+                    "name": "input"
+                }
+            ],
+            "name": "copy",
+            "outputs": [
+                {
+                    "name": "output"
+                }
+            ],
+            "parameters": [
+            ],
+            "version": "0.1"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp create_multiscale_timeseries $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                }
+            ],
+            "name": "create_multiscale_timeseries",
+            "outputs": [
+                {
+                    "name": "timeseries_out"
+                }
+            ],
+            "parameters": [
+            ],
+            "version": "0.17"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp detect $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                }
+            ],
+            "name": "detect",
+            "outputs": [
+                {
+                    "name": "detect_out"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "clip_size",
+                    "optional": false
+                },
+                {
+                    "name": "detect_interval",
+                    "optional": false
+                },
+                {
+                    "name": "detect_threshold",
+                    "optional": false
+                },
+                {
+                    "name": "sign",
+                    "optional": true
+                },
+                {
+                    "name": "individual_channels",
+                    "optional": true
+                }
+            ],
+            "version": "0.12"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp example $(arguments)",
+            "inputs": [
+            ],
+            "name": "example",
+            "outputs": [
+            ],
+            "parameters": [
+                {
+                    "name": "param1",
+                    "optional": false
+                },
+                {
+                    "name": "param2",
+                    "optional": true
+                }
+            ],
+            "version": ""
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp extract_channel_values $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                },
+                {
+                    "name": "firings"
+                }
+            ],
+            "name": "extract_channel_values",
+            "outputs": [
+                {
+                    "name": "values"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "channels",
+                    "optional": false
+                }
+            ],
+            "version": "0.1"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp extract_clips $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                },
+                {
+                    "name": "firings"
+                }
+            ],
+            "name": "extract_clips",
+            "outputs": [
+                {
+                    "name": "clips"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "clip_size",
+                    "optional": false
+                },
+                {
+                    "name": "channels",
+                    "optional": true
+                },
+                {
+                    "name": "t1",
+                    "optional": true
+                },
+                {
+                    "name": "t2",
+                    "optional": true
+                }
+            ],
+            "version": "0.12"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp extract_clips_aa $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                },
+                {
+                    "name": "detect"
+                }
+            ],
+            "name": "extract_clips_aa",
+            "outputs": [
+                {
+                    "name": "clips_out"
+                },
+                {
+                    "name": "detect_out"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "clip_size",
+                    "optional": false
+                },
+                {
+                    "name": "central_channel",
+                    "optional": false
+                },
+                {
+                    "name": "channels",
+                    "optional": true
+                },
+                {
+                    "name": "t1",
+                    "optional": true
+                },
+                {
+                    "name": "t2",
+                    "optional": true
+                }
+            ],
+            "version": "0.1"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp extract_clips_features $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                },
+                {
+                    "name": "firings"
+                }
+            ],
+            "name": "extract_clips_features",
+            "outputs": [
+                {
+                    "name": "features"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "clip_size",
+                    "optional": false
+                },
+                {
+                    "name": "num_features",
+                    "optional": false
+                },
+                {
+                    "name": "subtract_mean",
+                    "optional": true
+                }
+            ],
+            "version": "0.11"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp extract_geom $(arguments)",
+            "inputs": [
+                {
+                    "name": "input"
+                }
+            ],
+            "name": "extract_geom",
+            "outputs": [
+                {
+                    "name": "output"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "channels",
+                    "optional": true
+                }
+            ],
+            "version": "0.13"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp extract_raw $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                }
+            ],
+            "name": "extract_raw",
+            "outputs": [
+                {
+                    "name": "timeseries_out"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "t1",
+                    "optional": true
+                },
+                {
+                    "name": "t2",
+                    "optional": true
+                },
+                {
+                    "name": "channels",
+                    "optional": true
+                }
+            ],
+            "version": "0.12"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp filter_events $(arguments)",
+            "inputs": [
+                {
+                    "name": "firings"
+                }
+            ],
+            "name": "filter_events",
+            "outputs": [
+                {
+                    "name": "firings_out"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "detectability_threshold",
+                    "optional": false
+                },
+                {
+                    "name": "outlier_threshold",
+                    "optional": false
+                }
+            ],
+            "version": "0.1"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp firings_subset $(arguments)",
+            "inputs": [
+                {
+                    "name": "firings"
+                }
+            ],
+            "name": "firings_subset",
+            "outputs": [
+                {
+                    "name": "firings_out"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "labels",
+                    "optional": false
+                }
+            ],
+            "version": "0.1"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp fit_stage $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                },
+                {
+                    "name": "firings"
+                }
+            ],
+            "name": "fit_stage",
+            "outputs": [
+                {
+                    "name": "firings_out"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "clip_size",
+                    "optional": false
+                },
+                {
+                    "name": "shell_increment",
+                    "optional": false
+                },
+                {
+                    "name": "min_shell_size",
+                    "optional": false
+                },
+                {
+                    "name": "use_old",
+                    "optional": true
+                },
+                {
+                    "name": "neglogprior",
+                    "optional": true
+                }
+            ],
+            "version": "0.17"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp geom2adj $(arguments)",
+            "inputs": [
+                {
+                    "name": "input"
+                }
+            ],
+            "name": "geom2adj",
+            "outputs": [
+                {
+                    "name": "output"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "radius",
+                    "optional": false
+                },
+                {
+                    "name": "channels",
+                    "optional": true
+                }
+            ],
+            "version": "0.17"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp isocluster_drift_v1 $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                },
+                {
+                    "name": "detect"
+                },
+                {
+                    "name": "adjacency_matrix"
+                }
+            ],
+            "name": "isocluster_drift_v1",
+            "outputs": [
+                {
+                    "name": "firings_out"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "clip_size",
+                    "optional": false
+                },
+                {
+                    "name": "num_features",
+                    "optional": false
+                },
+                {
+                    "name": "num_features2",
+                    "optional": false
+                },
+                {
+                    "name": "detect_interval",
+                    "optional": false
+                },
+                {
+                    "name": "segment_size",
+                    "optional": false
+                },
+                {
+                    "name": "consolidation_factor",
+                    "optional": true
+                },
+                {
+                    "name": "num_features2",
+                    "optional": true
+                },
+                {
+                    "name": "isocut_threshold",
+                    "optional": true
+                },
+                {
+                    "name": "K_init",
+                    "optional": true
+                }
+            ],
+            "version": "0.2.7"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp isocluster_v1 $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                },
+                {
+                    "name": "detect"
+                },
+                {
+                    "name": "adjacency_matrix"
+                }
+            ],
+            "name": "isocluster_v1",
+            "outputs": [
+                {
+                    "name": "firings_out"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "clip_size",
+                    "optional": false
+                },
+                {
+                    "name": "num_features",
+                    "optional": false
+                },
+                {
+                    "name": "num_features2",
+                    "optional": false
+                },
+                {
+                    "name": "detect_interval",
+                    "optional": false
+                },
+                {
+                    "name": "consolidation_factor",
+                    "optional": true
+                },
+                {
+                    "name": "num_features2",
+                    "optional": true
+                },
+                {
+                    "name": "isocut_threshold",
+                    "optional": true
+                },
+                {
+                    "name": "K_init",
+                    "optional": true
+                }
+            ],
+            "version": "0.12"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp isocluster_v2 $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                },
+                {
+                    "name": "detect"
+                },
+                {
+                    "name": "adjacency_matrix"
+                }
+            ],
+            "name": "isocluster_v2",
+            "outputs": [
+                {
+                    "name": "firings_out"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "clip_size",
+                    "optional": false
+                },
+                {
+                    "name": "num_features",
+                    "optional": false
+                },
+                {
+                    "name": "num_features2",
+                    "optional": false
+                },
+                {
+                    "name": "detect_interval",
+                    "optional": false
+                },
+                {
+                    "name": "consolidation_factor",
+                    "optional": true
+                },
+                {
+                    "name": "num_features2",
+                    "optional": true
+                },
+                {
+                    "name": "isocut_threshold",
+                    "optional": true
+                },
+                {
+                    "name": "K_init",
+                    "optional": true
+                },
+                {
+                    "name": "time_segment_size",
+                    "optional": true
+                }
+            ],
+            "version": "0.1.1"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp linear_adjacency_matrix $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                }
+            ],
+            "name": "linear_adjacency_matrix",
+            "outputs": [
+                {
+                    "name": "output"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "radius",
+                    "optional": false
+                }
+            ],
+            "version": "0.1"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp link_firings_files_aa $(arguments)",
+            "inputs": [
+                {
+                    "name": "firings_list"
+                }
+            ],
+            "name": "link_firings_files_aa",
+            "outputs": [
+                {
+                    "name": "firings_out"
+                }
+            ],
+            "parameters": [
+            ],
+            "version": "0.1"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp mask_out_artifacts $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                }
+            ],
+            "name": "mask_out_artifacts",
+            "outputs": [
+                {
+                    "name": "timeseries_out"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "threshold",
+                    "optional": false
+                },
+                {
+                    "name": "interval_size",
+                    "optional": false
+                }
+            ],
+            "version": "0.31"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp mda2txt $(arguments)",
+            "inputs": [
+                {
+                    "name": "mda_file"
+                }
+            ],
+            "name": "mda2txt",
+            "outputs": [
+                {
+                    "name": "txt_file"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "transpose",
+                    "optional": true
+                },
+                {
+                    "name": "max_rows",
+                    "optional": true
+                },
+                {
+                    "name": "max_cols",
+                    "optional": true
+                },
+                {
+                    "name": "delimiter",
+                    "optional": true
+                }
+            ],
+            "version": "0.1"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp merge_across_channels $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                },
+                {
+                    "name": "firings"
+                }
+            ],
+            "name": "merge_across_channels",
+            "outputs": [
+                {
+                    "name": "firings_out"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "min_peak_ratio",
+                    "optional": false
+                },
+                {
+                    "name": "max_dt",
+                    "optional": false
+                },
+                {
+                    "name": "min_coinc_frac",
+                    "optional": false
+                },
+                {
+                    "name": "min_coinc_num",
+                    "optional": false
+                },
+                {
+                    "name": "max_corr_stddev",
+                    "optional": false
+                },
+                {
+                    "name": "min_template_corr_coef",
+                    "optional": false
+                },
+                {
+                    "name": "clip_size",
+                    "optional": false
+                }
+            ],
+            "version": "0.1"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp merge_across_channels_v2 $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                },
+                {
+                    "name": "firings"
+                }
+            ],
+            "name": "merge_across_channels_v2",
+            "outputs": [
+                {
+                    "name": "firings_out"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "clip_size",
+                    "optional": false
+                }
+            ],
+            "version": "0.19"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp merge_firings $(arguments)",
+            "inputs": [
+                {
+                    "name": "firings1"
+                },
+                {
+                    "name": "firings2"
+                }
+            ],
+            "name": "merge_firings",
+            "outputs": [
+                {
+                    "name": "firings_merged"
+                },
+                {
+                    "name": "confusion_matrix"
+                },
+                {
+                    "name": "optimal_label_map"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "max_matching_offset",
+                    "optional": false
+                }
+            ],
+            "version": "0.12"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp merge_labels $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                },
+                {
+                    "name": "firings"
+                }
+            ],
+            "name": "merge_labels",
+            "outputs": [
+                {
+                    "name": "firings_out"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "merge_threshold",
+                    "optional": false
+                },
+                {
+                    "name": "clip_size",
+                    "optional": false
+                }
+            ],
+            "version": "0.1"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp merge_stage $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                },
+                {
+                    "name": "firings"
+                }
+            ],
+            "name": "merge_stage",
+            "outputs": [
+                {
+                    "name": "firings_out"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "min_peak_ratio",
+                    "optional": false
+                },
+                {
+                    "name": "min_template_corr_coef",
+                    "optional": false
+                },
+                {
+                    "name": "clip_size",
+                    "optional": false
+                }
+            ],
+            "version": "0.11"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp ms_metrics $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                },
+                {
+                    "name": "firings"
+                }
+            ],
+            "name": "ms_metrics",
+            "outputs": [
+                {
+                    "name": "cluster_metrics"
+                },
+                {
+                    "name": "cluster_pair_metrics"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "clip_size",
+                    "optional": false
+                },
+                {
+                    "name": "do_not_compute_pair_metrics",
+                    "optional": true
+                }
+            ],
+            "version": "0.73"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp mv_compute_templates $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                },
+                {
+                    "name": "firings"
+                }
+            ],
+            "name": "mv_compute_templates",
+            "outputs": [
+                {
+                    "name": "templates"
+                },
+                {
+                    "name": "stdevs"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "clip_size",
+                    "optional": false
+                }
+            ],
+            "version": "0.12"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp mv_discrimhist $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                },
+                {
+                    "name": "firings"
+                }
+            ],
+            "name": "mv_discrimhist",
+            "outputs": [
+                {
+                    "name": "output"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "clusters",
+                    "optional": false
+                },
+                {
+                    "name": "method",
+                    "optional": true
+                }
+            ],
+            "version": "0.23"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp mv_discrimhist_guide $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                },
+                {
+                    "name": "firings"
+                }
+            ],
+            "name": "mv_discrimhist_guide",
+            "outputs": [
+                {
+                    "name": "output"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "num_histograms",
+                    "optional": false
+                },
+                {
+                    "name": "clusters_to_exclude",
+                    "optional": false
+                },
+                {
+                    "name": "method",
+                    "optional": true
+                }
+            ],
+            "version": "0.156"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp mv_discrimhist_guide2 $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                },
+                {
+                    "name": "firings"
+                }
+            ],
+            "name": "mv_discrimhist_guide2",
+            "outputs": [
+                {
+                    "name": "output"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "clip_size",
+                    "optional": false
+                },
+                {
+                    "name": "add_noise_level",
+                    "optional": false
+                },
+                {
+                    "name": "cluster_numbers",
+                    "optional": true
+                },
+                {
+                    "name": "max_comparisons_per_cluster",
+                    "optional": true
+                }
+            ],
+            "version": "0.19"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp mv_firings_filter $(arguments)",
+            "inputs": [
+                {
+                    "name": "firings"
+                }
+            ],
+            "name": "mv_firings_filter",
+            "outputs": [
+                {
+                    "name": "firings_out"
+                },
+                {
+                    "name": "original_cluster_numbers"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "use_shell_split",
+                    "optional": true
+                },
+                {
+                    "name": "shell_width",
+                    "optional": true
+                },
+                {
+                    "name": "min_per_shell",
+                    "optional": true
+                },
+                {
+                    "name": "use_event_filter",
+                    "optional": true
+                },
+                {
+                    "name": "min_amplitude",
+                    "optional": true
+                },
+                {
+                    "name": "max_outlier_score",
+                    "optional": true
+                },
+                {
+                    "name": "min_detectability_score",
+                    "optional": true
+                }
+            ],
+            "version": "0.11"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp mv_subfirings $(arguments)",
+            "inputs": [
+                {
+                    "name": "firings"
+                }
+            ],
+            "name": "mv_subfirings",
+            "outputs": [
+                {
+                    "name": "firings_out"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "labels",
+                    "optional": false
+                },
+                {
+                    "name": "max_per_label",
+                    "optional": true
+                }
+            ],
+            "version": "0.11"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp noise_nearest $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                },
+                {
+                    "name": "firings"
+                }
+            ],
+            "name": "noise_nearest",
+            "outputs": [
+                {
+                    "name": "confusion_matrix"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "clip_size",
+                    "optional": false
+                },
+                {
+                    "name": "add_noise_level",
+                    "optional": false
+                },
+                {
+                    "name": "cluster_numbers",
+                    "optional": true
+                }
+            ],
+            "version": "0.16"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp normalize_channels $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                }
+            ],
+            "name": "normalize_channels",
+            "outputs": [
+                {
+                    "name": "timeseries_out"
+                }
+            ],
+            "parameters": [
+            ],
+            "version": "0.1"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp quantize $(arguments)",
+            "inputs": [
+                {
+                    "name": "input"
+                }
+            ],
+            "name": "quantize",
+            "outputs": [
+                {
+                    "name": "output"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "output_format",
+                    "optional": false
+                }
+            ],
+            "version": "0.1"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp remove_duplicate_clusters $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                },
+                {
+                    "name": "firings"
+                }
+            ],
+            "name": "remove_duplicate_clusters",
+            "outputs": [
+                {
+                    "name": "firings_out"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "clip_size",
+                    "optional": false
+                }
+            ],
+            "version": "0.1"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp remove_noise_clusters $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                },
+                {
+                    "name": "firings"
+                }
+            ],
+            "name": "remove_noise_clusters",
+            "outputs": [
+                {
+                    "name": "firings_out"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "peak_threshold",
+                    "optional": false
+                }
+            ],
+            "version": "0.13"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp split_firings $(arguments)",
+            "inputs": [
+                {
+                    "name": "firings"
+                },
+                {
+                    "name": "raw_timeseries"
+                }
+            ],
+            "name": "split_firings",
+            "outputs": [
+                {
+                    "name": "firings_split"
+                }
+            ],
+            "parameters": [
+            ],
+            "version": "0.12"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp split_timeseries $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                },
+                {
+                    "name": "raw_timeseries"
+                }
+            ],
+            "name": "split_timeseries",
+            "outputs": [
+                {
+                    "name": "timeseries_split"
+                }
+            ],
+            "parameters": [
+            ],
+            "version": "0.1"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp synthesize1 $(arguments)",
+            "inputs": [
+                {
+                    "name": "waveforms"
+                },
+                {
+                    "name": "info"
+                }
+            ],
+            "name": "synthesize1",
+            "outputs": [
+                {
+                    "name": "timeseries_out"
+                },
+                {
+                    "name": "firings_true"
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "N",
+                    "optional": false
+                },
+                {
+                    "name": "samplerate",
+                    "optional": false
+                },
+                {
+                    "name": "waveforms_oversamp",
+                    "optional": false
+                },
+                {
+                    "name": "noise_level",
+                    "optional": true
+                }
+            ],
+            "version": "0.11"
+        },
+        {
+            "description": "",
+            "exe_command": "/ddLab/code/mountainlab/mountainprocess/processors/mountainsort.mp whiten $(arguments)",
+            "inputs": [
+                {
+                    "name": "timeseries"
+                }
+            ],
+            "name": "whiten",
+            "outputs": [
+                {
+                    "name": "timeseries_out"
+                }
+            ],
+            "parameters": [
+            ],
+            "version": "0.1"
+        }
+    ]
+}
