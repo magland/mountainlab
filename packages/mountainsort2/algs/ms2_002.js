@@ -31,11 +31,16 @@ exports.spec=function() {
 	spec0.parameters.push({name:"detect_interval_msec",optional:true,default_value:1});
 	spec0.parameters.push({name:"detect_threshold",optional:true,default_value:3.0});
 	spec0.parameters.push({name:"detect_sign",optional:true,default_value:0});
+    spec0.parameters.push({name:"detect_rms_window",optional:true,default_value:0});
 	spec0.parameters.push({name:"consolidate_clusters",optional:true,default_value:'false'});
 	spec0.parameters.push({name:"consolidation_factor",optional:true,default_value:0.9});
 	spec0.parameters.push({name:"fit_stage",optional:true,default_value:'false'});
 	spec0.parameters.push({name:'subsample_factor',optional:true,default_value:1});
 	spec0.parameters.push({name:'channels',optional:true,default_value:''});
+    spec0.parameters.push({name:'isocut_threshold',optional:true,default_value:1});
+    spec0.parameters.push({name:'weighted_pca',optional:true,default_value:0});
+    spec0.parameters.push({name:'remove_outliers',optional:true,default_value:0});
+    spec0.parameters.push({name:"keep_temp",optional:true,default_value:'true'});
 	return common.clone(spec0);
 };
 
@@ -184,13 +189,15 @@ exports.run=function(opts,callback) {
 		});
 	});
 	///////////////////////////////////////////////////////////////
-	steps.push(function(cb) {
+	if (!opts.keep_temp) {
+    steps.push(function(cb) {
 		//remove the temporary files
 		STEP_cleanup(function() {
 			common.print_mp_exec_process_timers();
 			cb();
 		});
 	});
+    }
 	///////////////////////////////////////////////////////////////
 
 	////////////////////////////////////////////////////////
@@ -441,7 +448,12 @@ exports.run=function(opts,callback) {
 		common.mp_exec_process('mountainsort.sort_clips',
 			{clips:clips},
 			{labels_out:labels},
-			{_request_num_threads:opts.num_threads},
+            {   
+                weighted_pca:opts.weighted_pca,
+                isocut_threshold:opts.isocut_threshold,
+                remove_outliers:opts.remove_outliers,
+                _request_num_threads:opts.num_threads
+            },
 			sort_clips_callback
 		);	
 	}
@@ -530,6 +542,7 @@ exports.run=function(opts,callback) {
 
 	function detect_events(timeseries,event_times_out,central_channel,callback) {
 		var detect_interval=Math.ceil(opts.detect_interval_msec/1000*opts.samplerate);
+        var detect_rms_window=Math.ceil(opts.detect_rms_window/1000*opts.samplerate);
 		common.mp_exec_process('mountainsort.detect_events',
 			{timeseries:timeseries},
 			{event_times_out:event_times_out},
@@ -537,6 +550,7 @@ exports.run=function(opts,callback) {
 				central_channel:central_channel,
 				detect_threshold:opts.detect_threshold,
 				detect_interval:detect_interval,
+                detect_rms_window:detect_rms_window,
 				sign:opts.detect_sign,
 				subsample_factor:opts.subsample_factor||1,
 				_request_num_threads:num_intersegment_threads	

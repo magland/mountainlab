@@ -24,6 +24,7 @@ extract_clips_features_Processor::extract_clips_features_Processor()
     this->setOutputFileParameters("features");
     this->setRequiredParameters("clip_size", "num_features");
     this->setOptionalParameters("subtract_mean");
+    this->setOptionalParameters("weighted_pca");
 }
 
 extract_clips_features_Processor::~extract_clips_features_Processor()
@@ -46,6 +47,7 @@ bool extract_clips_features_Processor::run(const QMap<QString, QVariant>& params
     int clip_size = params["clip_size"].toInt();
     int num_features = params["num_features"].toInt();
     int subtract_mean = params.value("subtract_mean", 0).toInt();
+    int weighted_pca = params.value("weighted_pca",0).toInt();
 
     DiskReadMda X(timeseries_path);
     DiskReadMda F(firings_path);
@@ -65,8 +67,11 @@ bool extract_clips_features_Processor::run(const QMap<QString, QVariant>& params
         clips_reshaped.set(clips.get(iii), iii);
     }
     Mda CC, FF, sigma;
-    pca(CC, FF, sigma, clips_reshaped, num_features, subtract_mean);
+    if (weighted_pca) {
+        wpca(CC, FF, sigma, clips_reshaped, num_features, subtract_mean);
+    }else {
+        pca(CC, FF, sigma, clips_reshaped, num_features, subtract_mean);
+    }
     return FF.write32(features_path);
-
     //return extract_clips_features(timeseries_path,firings_path,features_path,clip_size,num_features);
 }
