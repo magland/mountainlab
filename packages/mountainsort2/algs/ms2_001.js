@@ -33,6 +33,7 @@ exports.spec=function() {
 	spec0.parameters.push({name:"detect_interval_msec",optional:true,default_value:1});
 	spec0.parameters.push({name:"detect_threshold",optional:true,default_value:3.0});
 	spec0.parameters.push({name:"detect_sign",optional:true,default_value:0});
+    spec0.parameters.push({name:"isocut_threshold",optional:true,default_value:1.0})
 	spec0.parameters.push({name:"whiten",optional:true,default_value:'false'});
 	spec0.parameters.push({name:"consolidate_clusters",optional:true,default_value:'false'});
 	spec0.parameters.push({name:"fit_stage",optional:true,default_value:'false'});
@@ -484,6 +485,7 @@ exports.run=function(opts,callback) {
 			{clips:clips},
 			{labels_out:labels},
 			{_request_num_threads:opts.num_threads},
+			{_request_num_threads:opts.num_threads,isocut_threshold:opts.isocut_threshold},
 			sort_clips_callback
 		);	
 	}

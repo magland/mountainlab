@@ -1,0 +1,519 @@
+{
+  "processors": [
+    {
+      "name": "mountainsort.ms2_001",
+      "version": "0.29",
+      "inputs": [
+        {
+          "name": "timeseries",
+          "description": "preprocessed timeseries (M x N)",
+          "optional": false
+        },
+        {
+          "name": "prescribed_event_times",
+          "description": "Timestamps for all events",
+          "optional": true
+        },
+        {
+          "name": "event_times",
+          "description": "Timestamps for all events",
+          "optional": true
+        },
+        {
+          "name": "amplitudes",
+          "description": "Amplitudes for all events",
+          "optional": true
+        },
+        {
+          "name": "clips",
+          "description": "Event clips (perhaps whitened)",
+          "optional": true
+        }
+      ],
+      "outputs": [
+        {
+          "name": "event_times_out",
+          "optional": true
+        },
+        {
+          "name": "amplitudes_out",
+          "optional": true
+        },
+        {
+          "name": "clips_out",
+          "optional": true
+        },
+        {
+          "name": "firings_out",
+          "description": "The labeled events (R x L), R=3 or 4",
+          "optional": true
+        },
+        {
+          "name": "whitening_matrix_out",
+          "description": "",
+          "optional": true
+        }
+      ],
+      "parameters": [
+        {
+          "name": "samplerate",
+          "description": "sample rate for timeseries",
+          "optional": false
+        },
+        {
+          "name": "segment_duration_sec",
+          "optional": true,
+          "default_value": 3600
+        },
+        {
+          "name": "num_threads",
+          "optional": true,
+          "default_value": 0
+        },
+        {
+          "name": "central_channel",
+          "optional": true,
+          "default_value": 0
+        },
+        {
+          "name": "clip_size_msec",
+          "optional": true,
+          "default_value": 2
+        },
+        {
+          "name": "detect_interval_msec",
+          "optional": true,
+          "default_value": 1
+        },
+        {
+          "name": "detect_threshold",
+          "optional": true,
+          "default_value": 3
+        },
+        {
+          "name": "detect_sign",
+          "optional": true,
+          "default_value": 0
+        },
+        {
+          "name": "whiten",
+          "optional": true,
+          "default_value": "false"
+        },
+        {
+          "name": "consolidate_clusters",
+          "optional": true,
+          "default_value": "false"
+        },
+        {
+          "name": "fit_stage",
+          "optional": true,
+          "default_value": "false"
+        },
+        {
+          "name": "subsample_factor",
+          "optional": true,
+          "default_value": 1
+        },
+        {
+          "name": "channels",
+          "optional": true,
+          "default_value": ""
+        }
+      ],
+      "exe_command": "/ddLab/code/mountainlab/packages/mountainsort2/algs/mountainsort2.js.mp mountainsort.ms2_001 $(arguments)"
+    },
+    {
+      "name": "mountainsort.ms2_001_multichannel",
+      "version": "0.29-0.15",
+      "inputs": [
+        {
+          "name": "timeseries",
+          "description": "preprocessed timeseries (M x N)",
+          "optional": false
+        },
+        {
+          "name": "prescribed_event_times",
+          "description": "Timestamps for all events",
+          "optional": true
+        },
+        {
+          "name": "event_times",
+          "description": "Timestamps for all events",
+          "optional": true
+        },
+        {
+          "name": "amplitudes",
+          "description": "Amplitudes for all events",
+          "optional": true
+        },
+        {
+          "name": "clips",
+          "description": "Event clips (perhaps whitened)",
+          "optional": true
+        },
+        {
+          "name": "geom"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "event_times_out",
+          "optional": true
+        },
+        {
+          "name": "amplitudes_out",
+          "optional": true
+        },
+        {
+          "name": "clips_out",
+          "optional": true
+        },
+        {
+          "name": "firings_out",
+          "description": "The labeled events (R x L), R=3 or 4",
+          "optional": true
+        },
+        {
+          "name": "whitening_matrix_out",
+          "description": "",
+          "optional": true
+        }
+      ],
+      "parameters": [
+        {
+          "name": "samplerate",
+          "description": "sample rate for timeseries",
+          "optional": false
+        },
+        {
+          "name": "segment_duration_sec",
+          "optional": true,
+          "default_value": 3600
+        },
+        {
+          "name": "num_threads",
+          "optional": true,
+          "default_value": 0
+        },
+        {
+          "name": "central_channel",
+          "optional": true,
+          "default_value": 0
+        },
+        {
+          "name": "clip_size_msec",
+          "optional": true,
+          "default_value": 2
+        },
+        {
+          "name": "detect_interval_msec",
+          "optional": true,
+          "default_value": 1
+        },
+        {
+          "name": "detect_threshold",
+          "optional": true,
+          "default_value": 3
+        },
+        {
+          "name": "detect_sign",
+          "optional": true,
+          "default_value": 0
+        },
+        {
+          "name": "whiten",
+          "optional": true,
+          "default_value": "false"
+        },
+        {
+          "name": "consolidate_clusters",
+          "optional": true,
+          "default_value": "false"
+        },
+        {
+          "name": "fit_stage",
+          "optional": true,
+          "default_value": "false"
+        },
+        {
+          "name": "subsample_factor",
+          "optional": true,
+          "default_value": 1
+        },
+        {
+          "name": "channels",
+          "optional": true,
+          "default_value": ""
+        },
+        {
+          "name": "adjacency_radius"
+        }
+      ],
+      "exe_command": "/ddLab/code/mountainlab/packages/mountainsort2/algs/mountainsort2.js.mp mountainsort.ms2_001_multichannel $(arguments)"
+    },
+    {
+      "name": "mountainsort.ms2_002",
+      "version": "0.1",
+      "inputs": [
+        {
+          "name": "timeseries",
+          "description": "preprocessed timeseries (M x N)",
+          "optional": false
+        },
+        {
+          "name": "prescribed_event_times",
+          "description": "Timestamps for all events",
+          "optional": true
+        },
+        {
+          "name": "event_times",
+          "description": "Timestamps for all events",
+          "optional": true
+        },
+        {
+          "name": "amplitudes",
+          "description": "Amplitudes for all events",
+          "optional": true
+        },
+        {
+          "name": "clips",
+          "description": "Event clips (from preprocessed timeseries)",
+          "optional": true
+        }
+      ],
+      "outputs": [
+        {
+          "name": "event_times_out",
+          "optional": true
+        },
+        {
+          "name": "amplitudes_out",
+          "optional": true
+        },
+        {
+          "name": "clips_out",
+          "optional": true
+        },
+        {
+          "name": "firings_out",
+          "description": "The labeled events (R x L), R=3 or 4",
+          "optional": true
+        }
+      ],
+      "parameters": [
+        {
+          "name": "samplerate",
+          "description": "sample rate for timeseries",
+          "optional": false
+        },
+        {
+          "name": "segment_duration_sec",
+          "optional": true,
+          "default_value": 3600
+        },
+        {
+          "name": "num_threads",
+          "optional": true,
+          "default_value": 0
+        },
+        {
+          "name": "central_channel",
+          "optional": true,
+          "default_value": 0
+        },
+        {
+          "name": "clip_size_msec",
+          "optional": true,
+          "default_value": 2
+        },
+        {
+          "name": "detect_interval_msec",
+          "optional": true,
+          "default_value": 1
+        },
+        {
+          "name": "detect_threshold",
+          "optional": true,
+          "default_value": 3
+        },
+        {
+          "name": "detect_sign",
+          "optional": true,
+          "default_value": 0
+        },
+        {
+          "name": "detect_rms_window",
+          "optional": true,
+          "default_value": 0
+        },
+        {
+          "name": "consolidate_clusters",
+          "optional": true,
+          "default_value": "false"
+        },
+        {
+          "name": "consolidation_factor",
+          "optional": true,
+          "default_value": 0.9
+        },
+        {
+          "name": "fit_stage",
+          "optional": true,
+          "default_value": "false"
+        },
+        {
+          "name": "subsample_factor",
+          "optional": true,
+          "default_value": 1
+        },
+        {
+          "name": "channels",
+          "optional": true,
+          "default_value": ""
+        }
+      ],
+      "exe_command": "/ddLab/code/mountainlab/packages/mountainsort2/algs/mountainsort2.js.mp mountainsort.ms2_002 $(arguments)"
+    },
+    {
+      "name": "mountainsort.ms2_002_multineighborhood",
+      "version": "0.1-0.1",
+      "inputs": [
+        {
+          "name": "timeseries",
+          "description": "preprocessed timeseries (M x N)",
+          "optional": false
+        },
+        {
+          "name": "prescribed_event_times",
+          "description": "Timestamps for all events",
+          "optional": true
+        },
+        {
+          "name": "event_times",
+          "description": "Timestamps for all events",
+          "optional": true
+        },
+        {
+          "name": "amplitudes",
+          "description": "Amplitudes for all events",
+          "optional": true
+        },
+        {
+          "name": "clips",
+          "description": "Event clips (from preprocessed timeseries)",
+          "optional": true
+        },
+        {
+          "name": "geom",
+          "optional": true
+        }
+      ],
+      "outputs": [
+        {
+          "name": "event_times_out",
+          "optional": true
+        },
+        {
+          "name": "amplitudes_out",
+          "optional": true
+        },
+        {
+          "name": "clips_out",
+          "optional": true
+        },
+        {
+          "name": "firings_out",
+          "description": "The labeled events (R x L), R=3 or 4",
+          "optional": true
+        }
+      ],
+      "parameters": [
+        {
+          "name": "samplerate",
+          "description": "sample rate for timeseries",
+          "optional": false
+        },
+        {
+          "name": "segment_duration_sec",
+          "optional": true,
+          "default_value": 3600
+        },
+        {
+          "name": "num_threads",
+          "optional": true,
+          "default_value": 0
+        },
+        {
+          "name": "central_channel",
+          "optional": true,
+          "default_value": 0
+        },
+        {
+          "name": "clip_size_msec",
+          "optional": true,
+          "default_value": 2
+        },
+        {
+          "name": "detect_interval_msec",
+          "optional": true,
+          "default_value": 1
+        },
+        {
+          "name": "detect_threshold",
+          "optional": true,
+          "default_value": 3
+        },
+        {
+          "name": "detect_sign",
+          "optional": true,
+          "default_value": 0
+        },
+        {
+          "name": "detect_rms_window",
+          "optional": true,
+          "default_value": 0
+        },
+        {
+          "name": "consolidate_clusters",
+          "optional": true,
+          "default_value": "false"
+        },
+        {
+          "name": "consolidation_factor",
+          "optional": true,
+          "default_value": 0.9
+        },
+        {
+          "name": "fit_stage",
+          "optional": true,
+          "default_value": "false"
+        },
+        {
+          "name": "subsample_factor",
+          "optional": true,
+          "default_value": 1
+        },
+        {
+          "name": "channels",
+          "optional": true,
+          "default_value": ""
+        },
+        {
+          "name": "adjacency_radius"
+        },
+        {
+          "name": "consolidate_clusters",
+          "optional": true,
+          "default_value": "true"
+        },
+        {
+          "name": "consolidation_factor",
+          "optional": true,
+          "default_value": 0.9
+        }
+      ],
+      "exe_command": "/ddLab/code/mountainlab/packages/mountainsort2/algs/mountainsort2.js.mp mountainsort.ms2_002_multineighborhood $(arguments)"
+    }
+  ]
+}
