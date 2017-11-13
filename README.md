@@ -10,6 +10,8 @@ The software comprises tools for processing electrophysiological recordings and 
 
 Contact the authors for information on the slack team for users and developers.
 
+**Announcement:** We have a planned new release of the software for Thursday, November 16th. See below for more information.
+
 ## Installation
 
 [Installation instructions](old/doc/installation.md)
@@ -19,6 +21,8 @@ Contact the authors for information on the slack team for users and developers.
 [The first sort](old/doc/the_first_sort.md)
 
 ## Working branches
+
+* Announcement: We have a planned new release of the software for Thursday, November 16th. You can explore a preview at https://github.com/flatironinstitute/mountainsort
 
 * [ms3](https://github.com/magland/mountainlab/tree/ms3) - development branch with the ms3 processing pipeline (preferred)
 
