@@ -22,7 +22,7 @@ Contact the authors for information on the slack team for users and developers.
 
 ## Working branches
 
-* Announcement: We have a planned new release of the software for Thursday, November 16th. You can explore a preview at https://github.com/flatironinstitute/mountainsort
+* Announcement: We have a planned new release of the software for ~~Thursday, November 16th~~ (we are testing and finalizing, aiming to release next week). You can explore a preview at https://github.com/flatironinstitute/mountainsort
 
 * [ms3](https://github.com/magland/mountainlab/tree/ms3) - development branch with the ms3 processing pipeline (preferred)
 
