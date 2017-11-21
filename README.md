@@ -10,7 +10,7 @@ The software comprises tools for processing electrophysiological recordings and 
 
 Contact the authors for information on the slack team for users and developers.
 
-**Announcement:** As of November 21st, a beta release of the new version of MountainSort/MountainLab is available here: https://github.com/flatironinstitute/mountainsort. Please use that version going forward.
+**Announcement:** As of November 21st, 2017, a beta release of the new version of MountainSort/MountainLab is available here: https://github.com/flatironinstitute/mountainsort. Please use that version going forward.
 
 ## Installation
 
@@ -22,7 +22,7 @@ Please use the new version of MountainSort and MountainLab (see the announcement
 
 ## Working branches
 
-* As of November 21st, a beta release of the new version of MountainSort/MountainLab is available here: https://github.com/flatironinstitute/mountainsort. Please use that version going forward.
+* As of November 21st, 20017, a beta release of the new version of MountainSort/MountainLab is available here: https://github.com/flatironinstitute/mountainsort. Please use that version going forward.
 
 * [ms3](https://github.com/magland/mountainlab/tree/ms3) - development branch with the ms3 processing pipeline
 
