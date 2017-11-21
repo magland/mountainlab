@@ -10,21 +10,21 @@ The software comprises tools for processing electrophysiological recordings and 
 
 Contact the authors for information on the slack team for users and developers.
 
-**Announcement:** We have a planned new release of the software for Thursday, November 16th. See below for more information.
+**Announcement:** As of November 21st, a beta release of the new version of MountainSort/MountainLab is available here: https://github.com/flatironinstitute/mountainsort. Please use that version going forward.
 
 ## Installation
 
-[Installation instructions](old/doc/installation.md)
+Please use the new version of MountainSort and MountainLab (see the announcement below). But here are the old [installation instructions](old/doc/installation.md).
 
 ## How to run spike sorting
 
-[The first sort](old/doc/the_first_sort.md)
+Please use the new version of MountainSort and MountainLab (see the announcement below). But here are the old instructions for [the first sort](old/doc/the_first_sort.md)
 
 ## Working branches
 
-* Announcement: We have a planned new release of the software for ~~Thursday, November 16th~~ (we are testing and finalizing, aiming to release next week). You can explore a preview at https://github.com/flatironinstitute/mountainsort
+* As of November 21st, a beta release of the new version of MountainSort/MountainLab is available here: https://github.com/flatironinstitute/mountainsort. Please use that version going forward.
 
-* [ms3](https://github.com/magland/mountainlab/tree/ms3) - development branch with the ms3 processing pipeline (preferred)
+* [ms3](https://github.com/magland/mountainlab/tree/ms3) - development branch with the ms3 processing pipeline
 
 * [2017_06 branch](https://github.com/magland/mountainlab/tree/2017_06) - snapshot with only critical bug fix updates
 
