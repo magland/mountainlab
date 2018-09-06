@@ -1,1 +1,1 @@
-Please visit https://github.com/flatironinstitute/mountainsort
+Please visit https://github.com/flatironinstitute/mountainlab
